@@ -1,6 +1,63 @@
 import { expect, test } from "@playwright/test";
 import { emptyCard } from "../../src/domain/task";
 
+test("one result row and one reward for two selected proposals from the same team", async ({
+  page,
+}) => {
+  const act = async (actor: string, data: object) => {
+    const response = await page.request.post("/api/demo", {
+      headers: { "x-demo-actor": actor },
+      data,
+    });
+    expect(response.ok()).toBeTruthy();
+    return response.json();
+  };
+  const { taskId } = await act("business", {
+    type: "save-task",
+    card: { ...emptyCard, title: "E2E: один результат команды" },
+    rawDescription: "Проверим первый результат команды",
+    confirmed: true,
+    publish: true,
+  });
+  for (let i = 0; i < 2; i++) {
+    const { proposalId } = await act("team-4", {
+      type: "propose",
+      taskId,
+      idea: `Подход ${i}`,
+      plan: "Собрать прототип",
+      duration: "1 день",
+      link: "https://example.com/prototype",
+    });
+    await act("business", { type: "decide", proposalId, status: "selected" });
+  }
+  const { progressId } = await act("team-4", {
+    type: "submit-progress",
+    taskId,
+    description: "Единственный первый результат",
+    link: "https://example.com/result",
+  });
+  await page.goto("/business");
+  await page.getByRole("button", { name: /^Результаты/ }).click();
+  const rows = page
+    .locator(".proposal-card")
+    .filter({ hasText: "Единственный первый результат" });
+  await expect(rows).toHaveCount(1);
+  await rows.getByRole("button", { name: /Подтвердить/ }).click();
+  await expect(rows).toContainText("+10");
+  await act("business", { type: "confirm-progress", progressId });
+  const snapshot = await (
+    await page.request.get("/api/demo", {
+      headers: { "x-demo-actor": "business" },
+    })
+  ).json();
+  expect(
+    snapshot.progress.filter((p: { taskId: string }) => p.taskId === taskId),
+  ).toHaveLength(1);
+  expect(
+    snapshot.teams.find((t: { id: string }) => t.id === "team-4").points,
+  ).toBe(10);
+});
+
 test("business compares proposals and independently selects two teams", async ({
   page,
 }) => {

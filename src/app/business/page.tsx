@@ -17,14 +17,15 @@ export default function BusinessPage() {
       (!taskFilter || row.taskId === taskFilter) &&
       (tab !== "proposals" || !statusFilter || row.status === statusFilter),
   );
-  const results = proposals.filter(
-    (row) =>
-      row.status === "selected" &&
-      data?.progress.some(
-        (progress) =>
-          progress.taskId === row.taskId && progress.teamId === row.teamId,
-      ),
-  );
+  const results = (data?.progress ?? []).flatMap((progress) => {
+    const proposal = proposals.find(
+      (row) =>
+        row.status === "selected" &&
+        row.taskId === progress.taskId &&
+        row.teamId === progress.teamId,
+    );
+    return proposal ? [proposal] : [];
+  });
   return (
     <DataGate>
       {actor !== "business" ? (

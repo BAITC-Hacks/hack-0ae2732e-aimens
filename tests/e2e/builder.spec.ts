@@ -1,5 +1,54 @@
 import { expect, test } from "@playwright/test";
 
+test("business edits and publishes a seeded draft hidden from teams", async ({
+  page,
+}) => {
+  const before = await (
+    await page.request.get("/api/demo", {
+      headers: { "x-demo-actor": "team-2" },
+    })
+  ).json();
+  expect(
+    before.tasks.some((t: { id: string }) => t.id === "draft-inventory"),
+  ).toBe(false);
+  await page.goto("/business");
+  await page
+    .getByRole("link", { name: "Редактировать: Учёт на складе", exact: true })
+    .click();
+  await expect(page.getByLabel("Исходное описание")).toContainText(
+    "Магазин ведёт остатки",
+  );
+  await page
+    .getByLabel("Название задачи")
+    .fill("E2E: опубликованный пример склада");
+  await page
+    .getByLabel("Исходное описание")
+    .fill("Магазин ведёт остатки в таблице, нужна единая форма.");
+  await page.getByRole("button", { name: "Предпросмотр", exact: true }).click();
+  await page.getByRole("checkbox", { name: /Я проверил/ }).check();
+  await page
+    .getByRole("button", { name: "Подтвердить карточку", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Опубликовать задачу", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", {
+      name: "E2E: опубликованный пример склада",
+      exact: true,
+    }),
+  ).toBeVisible();
+  const after = await (
+    await page.request.get("/api/demo", {
+      headers: { "x-demo-actor": "team-2" },
+    })
+  ).json();
+  expect(
+    after.tasks.find((t: { id: string }) => t.id === "draft-inventory")
+      .publishedAt,
+  ).toBeTruthy();
+});
+
 test("builder saves an unfinished description as a draft", async ({ page }) => {
   await page.goto("/tasks/new");
   const description = `Черновик ${Date.now()}: хотим понять причины оттока клиентов.`;

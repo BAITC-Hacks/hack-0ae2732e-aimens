@@ -47,6 +47,33 @@ describe("AI assistance", () => {
       validateAnalysis({ questions: [] }, "Текст", emptyCard),
     ).toThrow();
   });
+  it("accepts authored text sources but rejects internal enum values", () => {
+    const card = {
+      ...emptyCard,
+      need: "Ускорить ручной подбор",
+      skills: ["Python"],
+      workFormat: "remote" as const,
+    };
+    const questions = localAnalysis("Описание процесса", card).questions;
+    for (const value of [
+      "unknown",
+      "remote",
+      "Ускорить ручной подбор",
+      "Python",
+    ]) {
+      const result = validateAnalysis(
+        {
+          extractions: [{ field: "context", value, sourceQuote: value }],
+          questions,
+        },
+        "Описание процесса",
+        card,
+      );
+      expect(result.suggestions.context).toBe(
+        ["unknown", "remote"].includes(value) ? undefined : value,
+      );
+    }
+  });
   it("deduplicates repeated model questions and fills unique fields locally", () => {
     const result = validateAnalysis(
       {

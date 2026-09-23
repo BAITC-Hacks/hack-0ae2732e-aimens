@@ -198,7 +198,7 @@ describe("demo workflow", () => {
     const store = fresh();
     store.seed();
     store.seed();
-    expect(store.snapshot("business").tasks).toHaveLength(5);
+    expect(store.snapshot("business").tasks).toHaveLength(10);
     const { taskId } = store.act("business", {
       type: "save-task",
       card: { ...emptyCard, title: "Новая задача", topic: "Торговля" },
@@ -233,6 +233,50 @@ describe("demo workflow", () => {
         publish: false,
       }),
     ).toThrow();
+  });
+  it("persists five editable demo drafts without publishing, scoring or overwriting them", () => {
+    const store = fresh();
+    const drafts = store
+      .snapshot("business")
+      .tasks.filter((task) => !task.publishedAt);
+    expect(drafts).toHaveLength(5);
+    for (const draft of drafts) {
+      expect(draft.confirmedAt).toBeNull();
+      expect(draft.readiness.score).toBe(0);
+      expect(draft.rawDescription.length).toBeGreaterThan(20);
+      expect(
+        store.snapshot("team-1").tasks.some((task) => task.id === draft.id),
+      ).toBe(false);
+    }
+    const draft = drafts[0];
+    store.act("business", {
+      type: "save-task",
+      id: draft.id,
+      card: { ...draft.card, title: "Моя правка" },
+      rawDescription: "Пользовательское описание",
+      confirmed: false,
+      publish: false,
+    });
+    store.seed();
+    const edited = store
+      .snapshot("business")
+      .tasks.find((task) => task.id === draft.id)!;
+    expect(edited.card.title).toBe("Моя правка");
+    expect(edited.rawDescription).toBe("Пользовательское описание");
+    store.act("business", {
+      type: "save-task",
+      id: draft.id,
+      card: edited.card,
+      rawDescription: edited.rawDescription,
+      confirmed: true,
+      publish: true,
+    });
+    store.seed();
+    expect(
+      store.snapshot("team-5").tasks.find((task) => task.id === draft.id)?.card
+        .title,
+    ).toBe("Моя правка");
+    expect(store.snapshot("business").tasks).toHaveLength(10);
   });
   it("selects multiple teams and awards progress only once", () => {
     const store = fresh();

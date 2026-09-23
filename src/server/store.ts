@@ -15,7 +15,7 @@ import {
   Task,
   Team,
 } from "@/domain/task";
-import { seedTasks, seedTeams } from "@/domain/demo-data";
+import { draftExamples, seedTasks, seedTeams } from "@/domain/demo-data";
 
 export class DemoError extends Error {
   constructor(
@@ -65,6 +65,21 @@ export class Store {
     try {
       const insertTask = this.db.prepare(
         "INSERT OR IGNORE INTO tasks VALUES (?,?,?,?,?,?,?)",
+      );
+      draftExamples.forEach((draft) =>
+        insertTask.run(
+          draft.id,
+          JSON.stringify({
+            ...emptyCard,
+            title: draft.title,
+            topic: draft.topic,
+          }),
+          draft.text,
+          "Демобизнес",
+          "2026-09-23T08:00:00.000Z",
+          null,
+          null,
+        ),
       );
       seedTasks.forEach((task, i) => {
         const date = `2026-09-${String(18 + i).padStart(2, "0")}T09:00:00.000Z`;
