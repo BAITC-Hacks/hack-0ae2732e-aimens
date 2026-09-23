@@ -968,10 +968,10 @@ img {
 }
 .visual-card {
   overflow: hidden;
-  border-color: #d7e3dd;
+  border-color: #d4e4da;
   box-shadow:
-    0 12px 28px -22px rgb(17 53 46 / 52%),
-    0 2px 7px rgb(17 53 46 / 5%);
+    0 15px 32px -21px rgb(17 53 46 / 48%),
+    0 3px 11px rgb(17 53 46 / 7%);
   transition:
     transform 180ms ease,
     box-shadow 180ms ease,
@@ -987,7 +987,7 @@ img {
 .visual-card .task-visual {
   isolation: isolate;
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 90%);
-  background: linear-gradient(132deg, #fff7e4 0%, #f5e0b6 100%);
+  background: linear-gradient(132deg, #fff8e8 0%, #ffdfa0 100%);
 }
 .visual-card .task-visual::after {
   position: absolute;
@@ -1007,10 +1007,10 @@ img {
   pointer-events: none;
 }
 .visual-card .task-visual.topic-Образование {
-  background: linear-gradient(132deg, #f3f0ff 0%, #ded8f7 100%);
+  background: linear-gradient(132deg, #f7f4ff 0%, #ded4ff 100%);
 }
 .visual-card .task-visual.topic-Логистика {
-  background: linear-gradient(132deg, #e9f8ef 0%, #c9e9d6 100%);
+  background: linear-gradient(132deg, #edfff3 0%, #c6f0d5 100%);
 }
 .visual-card .task-visual > img,
 .visual-card .task-visual > svg {
