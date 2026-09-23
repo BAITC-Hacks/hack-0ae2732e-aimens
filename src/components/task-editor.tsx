@@ -16,6 +16,7 @@ import {
   Card,
   Task,
   Analysis,
+  FieldKey,
   emptyCard,
   fields,
   topics,
@@ -35,6 +36,12 @@ export function TaskEditor({ task }: { task?: Task }) {
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState("");
   const [confirmed, setConfirmed] = useState(false);
+  function appliedSource(key: FieldKey) {
+    const suggestion = analysis?.suggestions[key];
+    const source = analysis?.sources[key];
+    if (!suggestion || !source || card[key] !== suggestion) return "";
+    return source.length > 320 ? `${source.slice(0, 317)}…` : source;
+  }
   function update(key: keyof Card, value: string) {
     setCard((current) => ({ ...current, [key]: value }));
     setConfirmed(false);
@@ -55,11 +62,17 @@ export function TaskEditor({ task }: { task?: Task }) {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error);
       setAnalysis(result);
-      setCard((current) => ({
-        ...current,
-        ...result.suggestions,
-        context: current.context || result.suggestions.context || raw,
-      }));
+      setCard((current) => {
+        const next = { ...current };
+        for (const field of fields) {
+          const suggestion = result.suggestions[field.key];
+          if (!next[field.key].trim() && suggestion?.trim())
+            next[field.key] = suggestion;
+        }
+        if (!next.context.trim()) next.context = raw;
+        return next;
+      });
+      setConfirmed(false);
       setStep(1);
     } catch (err) {
       setError(
@@ -203,6 +216,18 @@ export function TaskEditor({ task }: { task?: Task }) {
                     </button>
                   ))}
                 </div>
+                <div
+                  className="info-note local"
+                  role="note"
+                  style={{ marginTop: 20 }}
+                >
+                  <Info size={16} aria-hidden="true" />
+                  <span>
+                    <strong>Перед анализом.</strong> Если включён OpenAI,
+                    описание будет передано внешнему AI-сервису. Не указывайте
+                    пароли, API-ключи и персональные данные.
+                  </span>
+                </div>
                 <div className="form-actions">
                   <button
                     className="button primary"
@@ -229,27 +254,58 @@ export function TaskEditor({ task }: { task?: Task }) {
                   className={`info-note ${analysis.mode === "local" ? "local" : ""}`}
                 >
                   <Info size={16} />
-                  <span>{analysis.message}</span>
+                  <span>
+                    <strong>
+                      {analysis.mode === "openai"
+                        ? "Режим: OpenAI"
+                        : "Режим: локальные правила"}
+                    </strong>
+                    <br />
+                    {analysis.message}
+                  </span>
                 </div>
                 <p className="muted text-small" style={{ marginBottom: 20 }}>
                   Ответьте на то, что знаете. Остальное можно уточнить позже:
                   неполная задача тоже может быть опубликована.
                 </p>
-                {analysis.questions.map((question, index) => (
-                  <label className="field" key={`${question.field}-${index}`}>
-                    <span>
-                      {index + 1}. {question.question}
-                    </span>
-                    <textarea
-                      value={card[question.field]}
-                      onChange={(event) =>
-                        update(question.field, event.target.value)
-                      }
-                      maxLength={4000}
-                      placeholder="Ваш ответ"
-                    />
-                  </label>
-                ))}
+                {analysis.questions.map((question, index) => {
+                  const source = appliedSource(question.field);
+                  return (
+                    <label className="field" key={`${question.field}-${index}`}>
+                      <span>
+                        {index + 1}. {question.question}
+                      </span>
+                      <textarea
+                        value={card[question.field]}
+                        onChange={(event) =>
+                          update(question.field, event.target.value)
+                        }
+                        maxLength={4000}
+                        placeholder="Ваш ответ"
+                      />
+                      {source && <small>Источник AI: «{source}»</small>}
+                    </label>
+                  );
+                })}
+                <label className="field">
+                  <span>Как команда получит доступ к данным?</span>
+                  <select
+                    value={card.dataAccess}
+                    onChange={(event) =>
+                      update("dataAccess", event.target.value)
+                    }
+                  >
+                    {Object.entries(accessLabels).map(([key, label]) => (
+                      <option value={key} key={key}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                  <small>
+                    Описание данных вместе со способом доступа даёт до 20 баллов
+                    готовности.
+                  </small>
+                </label>
                 <div className="form-actions">
                   <button
                     className="button secondary"
@@ -279,6 +335,35 @@ export function TaskEditor({ task }: { task?: Task }) {
                   <h2>Проверьте карточку</h2>
                   <span>{task?.publishedAt ? "Редактирование" : "Шаг 03"}</span>
                 </div>
+                {task && (
+                  <>
+                    <p
+                      className="muted text-small"
+                      style={{ marginBottom: 12 }}
+                    >
+                      При включённом OpenAI описание и текущие поля будут
+                      переданы внешнему AI-сервису. Не добавляйте секреты и
+                      персональные данные.
+                    </p>
+                    <div className="form-actions" style={{ marginBottom: 20 }}>
+                      <button
+                        type="button"
+                        className="button secondary"
+                        onClick={analyze}
+                        disabled={analyzing || busy}
+                      >
+                        {analyzing ? (
+                          <LoaderCircle size={16} className="spin" />
+                        ) : (
+                          <Sparkles size={16} />
+                        )}{" "}
+                        {analyzing
+                          ? "Анализируем карточку…"
+                          : "Повторно уточнить с AI"}
+                      </button>
+                    </div>
+                  </>
+                )}
                 <label className="field">
                   <span>Название задачи *</span>
                   <input
@@ -301,49 +386,55 @@ export function TaskEditor({ task }: { task?: Task }) {
                     ))}
                   </select>
                 </label>
-                {fields.map((field) => (
-                  <div key={field.key}>
-                    <label className="field">
-                      <span>{field.label}</span>
-                      {["contact", "successTarget"].includes(field.key) ? (
-                        <input
-                          value={card[field.key]}
-                          maxLength={4000}
-                          onChange={(event) =>
-                            update(field.key, event.target.value)
-                          }
-                          placeholder={field.hint}
-                        />
-                      ) : (
-                        <textarea
-                          value={card[field.key]}
-                          maxLength={4000}
-                          onChange={(event) =>
-                            update(field.key, event.target.value)
-                          }
-                          placeholder={field.hint}
-                        />
-                      )}
-                    </label>
-                    {field.key === "dataDescription" && (
+                {fields.map((field) => {
+                  const source = appliedSource(field.key);
+                  return (
+                    <div key={field.key}>
                       <label className="field">
-                        <span>Доступ к данным</span>
-                        <select
-                          value={card.dataAccess}
-                          onChange={(event) =>
-                            update("dataAccess", event.target.value)
-                          }
-                        >
-                          {Object.entries(accessLabels).map(([key, label]) => (
-                            <option value={key} key={key}>
-                              {label}
-                            </option>
-                          ))}
-                        </select>
+                        <span>{field.label}</span>
+                        {["contact", "successTarget"].includes(field.key) ? (
+                          <input
+                            value={card[field.key]}
+                            maxLength={4000}
+                            onChange={(event) =>
+                              update(field.key, event.target.value)
+                            }
+                            placeholder={field.hint}
+                          />
+                        ) : (
+                          <textarea
+                            value={card[field.key]}
+                            maxLength={4000}
+                            onChange={(event) =>
+                              update(field.key, event.target.value)
+                            }
+                            placeholder={field.hint}
+                          />
+                        )}
+                        {source && <small>Источник AI: «{source}»</small>}
                       </label>
-                    )}
-                  </div>
-                ))}
+                      {field.key === "dataDescription" && (
+                        <label className="field">
+                          <span>Доступ к данным</span>
+                          <select
+                            value={card.dataAccess}
+                            onChange={(event) =>
+                              update("dataAccess", event.target.value)
+                            }
+                          >
+                            {Object.entries(accessLabels).map(
+                              ([key, label]) => (
+                                <option value={key} key={key}>
+                                  {label}
+                                </option>
+                              ),
+                            )}
+                          </select>
+                        </label>
+                      )}
+                    </div>
+                  );
+                })}
                 <label className="checkbox-row">
                   <input
                     type="checkbox"

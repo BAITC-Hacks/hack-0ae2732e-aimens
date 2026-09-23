@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Check, Circle } from "lucide-react";
 import { useDemo } from "@/components/demo-provider";
 import { DataGate, Empty } from "@/components/ui";
 import { ProposalCard } from "@/components/proposals";
@@ -15,6 +15,44 @@ export default function TeamPage() {
   const filtered = proposals.filter(
     (proposal) => !status || proposal.status === status,
   );
+  const selectedProposals = proposals.filter(
+    (proposal) => proposal.status === "selected",
+  );
+  const teamProgress =
+    data?.progress.filter((progress) => progress.teamId === actor) ?? [];
+  const confirmedProgress = teamProgress.filter(
+    (progress) => progress.confirmedAt,
+  );
+  const journey = [
+    {
+      label: "Отправить предложение",
+      detail: proposals.length
+        ? `${proposals.length} отправлено`
+        : "Выберите задачу",
+      complete: proposals.length > 0,
+    },
+    {
+      label: "Получить выбор бизнеса",
+      detail: selectedProposals.length
+        ? `${selectedProposals.length} в работе`
+        : "Ожидает решения",
+      complete: selectedProposals.length > 0,
+    },
+    {
+      label: "Показать первый результат",
+      detail: teamProgress.length
+        ? `${teamProgress.length} отправлено`
+        : "Добавьте ссылку",
+      complete: teamProgress.length > 0,
+    },
+    {
+      label: "Получить подтверждение",
+      detail: confirmedProgress.length
+        ? `+${confirmedProgress.length * 10} баллов`
+        : "+10 баллов",
+      complete: confirmedProgress.length > 0,
+    },
+  ];
   return (
     <DataGate>
       {!team ? (
@@ -81,6 +119,36 @@ export default function TeamPage() {
               <small>Бизнес выбрал вашу команду</small>
             </div>
           </div>
+          <section
+            className="panel team-journey"
+            aria-labelledby="journey-title"
+          >
+            <div className="section-title">
+              <div>
+                <div className="eyebrow">ПУТЬ К РЕЗУЛЬТАТУ</div>
+                <h2 id="journey-title">Как команда получает баллы</h2>
+              </div>
+              <strong>+10 за каждую подтверждённую задачу</strong>
+            </div>
+            <ol>
+              {journey.map((step, index) => (
+                <li
+                  className={step.complete ? "complete" : ""}
+                  key={step.label}
+                >
+                  <span className="journey-marker" aria-hidden="true">
+                    {step.complete ? <Check size={16} /> : <Circle size={15} />}
+                  </span>
+                  <div>
+                    <b>
+                      {index + 1}. {step.label}
+                    </b>
+                    <small>{step.detail}</small>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </section>
           <div className="section-tabs" aria-label="Фильтр предложений">
             {[
               ["", "Все"],

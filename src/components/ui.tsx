@@ -8,7 +8,7 @@ import {
   MessageSquare,
   ArrowRight,
 } from "lucide-react";
-import { Readiness, Task, Card, computeReadiness } from "@/domain/task";
+import { Readiness, Task, Card, computeReadiness, levels } from "@/domain/task";
 import { useDemo } from "./demo-provider";
 
 export function Loading() {
@@ -64,6 +64,10 @@ export function ScorePanel({
   preview?: boolean;
 }) {
   const result = computeReadiness(card);
+  const nextLevel = levels.find((level) => level.min > result.score);
+  const nextActions = [...result.missing]
+    .sort((left, right) => right.max - left.max)
+    .slice(0, 3);
   return (
     <section className="panel score-panel">
       <div className="eyebrow">
@@ -101,11 +105,23 @@ export function ScorePanel({
           </div>
         ))}
       </div>
-      {result.missing.length > 0 ? (
+      {nextActions.length > 0 ? (
         <div className="improve">
-          <h3>Следующий шаг</h3>
-          <p>{result.missing[0].tip}</p>
-          <span>+{result.missing[0].max} баллов к готовности</span>
+          <h3>Ближайшие шаги</h3>
+          <ol className="improve-list">
+            {nextActions.map((row) => (
+              <li key={row.field}>
+                <span>{row.tip}</span>
+                <strong>+{row.max}</strong>
+              </li>
+            ))}
+          </ol>
+          {nextLevel && (
+            <p className="next-level">
+              До уровня «{nextLevel.label}» — {nextLevel.min - result.score}{" "}
+              баллов
+            </p>
+          )}
         </div>
       ) : (
         <div className="improve">

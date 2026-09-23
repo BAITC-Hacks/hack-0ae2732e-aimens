@@ -175,6 +175,11 @@ test("all pages work and catalog filters do not restrict team access", async ({
   await expect(
     page.getByRole("heading", { name: "Предложите своё решение" }),
   ).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel("Демопрофиль")).toHaveValue("team-5");
+  await expect(
+    page.getByRole("heading", { name: "Предложите своё решение" }),
+  ).toBeVisible();
   await page
     .getByRole("navigation")
     .getByRole("link", { name: "Мои отклики" })

@@ -108,13 +108,76 @@ export const levels = [
 export function readinessLevel(score: number) {
   return [...levels].reverse().find((level) => score >= level.min) ?? levels[0];
 }
+
+/**
+ * Normalizes user-entered text for readiness checks. A value must contain at
+ * least one Unicode letter or digit: punctuation and formatting alone do not
+ * make a task field complete, while short answers such as "Я", "AI" or "2%"
+ * remain valid.
+ */
+export function normalizeMeaningfulText(value: string) {
+  const normalized = value.normalize("NFKC").replace(/\s+/gu, " ").trim();
+  return /[\p{L}\p{N}]/u.test(normalized) ? normalized : "";
+}
+
+function normalizeComparableText(value: string) {
+  return normalizeMeaningfulText(value)
+    .toLocaleLowerCase("ru")
+    .replace(/[\p{P}\p{S}]+/gu, " ")
+    .replace(/\s+/gu, " ")
+    .trim();
+}
+
+const absentDataPhrases = new Set([
+  "нет",
+  "нету",
+  "нет данных",
+  "нету данных",
+  "данных нет",
+  "пока нет данных",
+  "данных пока нет",
+  "данные отсутствуют",
+  "данные пока отсутствуют",
+  "пока данные отсутствуют",
+  "данные не предоставлены",
+  "данные пока не предоставлены",
+  "данных не предоставлено",
+  "данных пока не предоставлено",
+  "данные не указаны",
+  "данные пока не указаны",
+  "данных не указано",
+  "данных пока не указано",
+  "данные не уточнены",
+  "данные пока не уточнены",
+  "данных не уточнено",
+  "данных пока не уточнено",
+  "данных не имеется",
+  "данных пока не имеется",
+  "информации нет",
+  "информация отсутствует",
+  "материалов нет",
+  "материалы отсутствуют",
+  "не уточнено",
+  "не указано",
+  "неизвестно",
+  "не известно",
+  "пока неизвестно",
+  "пока не известно",
+  "отсутствует",
+  "отсутствуют",
+]);
+
+function describesAbsentData(value: string) {
+  return absentDataPhrases.has(normalizeComparableText(value));
+}
+
+export function hasMeaningfulDataDescription(value: string) {
+  return !!normalizeMeaningfulText(value) && !describesAbsentData(value);
+}
+
 export function computeReadiness(card: Card) {
-  const has = (key: keyof Card) => !!card[key].trim();
-  const hasData =
-    has("dataDescription") &&
-    !["нет", "не уточнено", "данных нет"].includes(
-      card.dataDescription.trim().toLocaleLowerCase("ru"),
-    );
+  const has = (key: keyof Card) => !!normalizeMeaningfulText(card[key]);
+  const hasData = hasMeaningfulDataDescription(card.dataDescription);
   const checks: [string, number, boolean, FieldKey, string][] = [
     ["Контекст", 10, has("context"), "context", "Опишите текущую ситуацию"],
     ["Потребность", 10, has("need"), "need", "Сформулируйте проблему"],
