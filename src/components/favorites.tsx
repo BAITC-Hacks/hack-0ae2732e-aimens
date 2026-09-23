@@ -8,6 +8,7 @@ import {
 } from "react";
 import { Bookmark } from "lucide-react";
 import { useDemo } from "./demo-provider";
+import { useLocale } from "./locale-provider";
 
 const key = "sanalink-favorites";
 const changeEvent = "sanalink-favorites-change";
@@ -81,11 +82,12 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
 export const useFavorites = () => useContext(FavoritesContext);
 export function FavoriteButton({ id, title }: { id: string; title: string }) {
   const { ids, toggle } = useFavorites();
+  const { t } = useLocale();
   const saved = ids.includes(id);
   return (
     <button
       className={`icon-button favorite-button ${saved ? "saved" : ""}`}
-      aria-label={`${saved ? "Убрать из избранного" : "Сохранить задачу"}: ${title}`}
+      aria-label={`${t(saved ? "Убрать из избранного" : "Сохранить задачу")}: ${t(title)}`}
       aria-pressed={saved}
       onClick={() => toggle(id)}
     >

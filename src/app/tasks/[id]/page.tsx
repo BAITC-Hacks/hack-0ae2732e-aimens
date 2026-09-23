@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { accessLabels, emptyCard, workFormatLabels } from "@/domain/task";
 import { useDemo } from "@/components/demo-provider";
+import { useLocale } from "@/components/locale-provider";
 import { DataGate, Empty, Badge, ScorePanel } from "@/components/ui";
 import { ProposalCard, ProposalForm } from "@/components/proposals";
 import { ProposalComparison } from "@/components/proposal-comparison";
@@ -23,6 +24,7 @@ export default function TaskPage({
 }) {
   const { id } = use(params);
   const { data, actor, setActor } = useDemo();
+  const { locale } = useLocale();
   const task = data?.tasks.find((task) => task.id === id);
   const proposals =
     data?.proposals.filter((proposal) => proposal.taskId === id) ?? [];
@@ -69,7 +71,7 @@ export default function TaskPage({
                 <time dateTime={task.publishedAt ?? task.createdAt}>
                   {new Date(
                     task.publishedAt ?? task.createdAt,
-                  ).toLocaleDateString("ru-RU", {
+                  ).toLocaleDateString({ ru: "ru-RU", kk: "kk-KZ", en: "en-US" }[locale], {
                     day: "numeric",
                     month: "long",
                     year: "numeric",

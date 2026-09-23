@@ -11,10 +11,13 @@ import {
   Plus,
 } from "lucide-react";
 import { useDemo } from "./demo-provider";
+import { useLocale } from "./locale-provider";
 import { useEffect, useRef, type ReactNode } from "react";
 
 export function Shell({ children }: { children: ReactNode }) {
   const path = usePathname();
+  const { locale, setLocale } = useLocale();
+  const languageLabel = locale === "kk" ? "Интерфейс тілі" : locale === "en" ? "Interface language" : "Язык интерфейса";
   const menu = useRef<HTMLDetailsElement>(null);
   const {
     actor,
@@ -87,6 +90,18 @@ export function Shell({ children }: { children: ReactNode }) {
             ))}
           </nav>
           <div className="topbar-right">
+            <label className="language-control" data-no-translate>
+              <span className="sr-only">{languageLabel}</span>
+              <select
+                aria-label={languageLabel}
+                value={locale}
+                onChange={(event) => setLocale(event.target.value as "ru" | "kk" | "en")}
+              >
+                <option value="ru">РУС</option>
+                <option value="kk">ҚАЗ</option>
+                <option value="en">ENG</option>
+              </select>
+            </label>
             <Link
               href="/catalog#search"
               className="icon-button header-search"

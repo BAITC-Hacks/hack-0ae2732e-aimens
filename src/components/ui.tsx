@@ -1,4 +1,5 @@
 "use client";
+import { useLocale } from "./locale-provider";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -230,6 +231,7 @@ export function TaskCard({
   onPreview?: () => void;
   selected?: boolean;
 }) {
+  const { locale, t } = useLocale();
   const readiness = reviewedReadiness(task.card, task.qualityAssessment);
   const VisualIcon = taskVisualIcon[task.card.topic] ?? BriefcaseBusiness;
   return (
@@ -264,7 +266,7 @@ export function TaskCard({
             <span>
               {task.card.topic} ·{" "}
               {task.publishedAt
-                ? new Date(task.publishedAt).toLocaleDateString("ru-RU", {
+                ? new Date(task.publishedAt).toLocaleDateString({ ru: "ru-RU", kk: "kk-KZ", en: "en-US" }[locale], {
                     day: "numeric",
                     month: "short",
                   })
@@ -290,7 +292,7 @@ export function TaskCard({
           <span>{workFormatLabels[task.card.workFormat ?? "unspecified"]}</span>
           <span className="subtle">
             <MessageSquare size={14} />
-            {task.proposalCount} откликов
+            {task.proposalCount} {locale === "en" ? (task.proposalCount === 1 ? "response" : "responses") : locale === "kk" ? "жауап" : "откликов"}
           </span>
         </div>
         <div className="task-card-bottom">
@@ -305,7 +307,7 @@ export function TaskCard({
             <button
               className="text-link preview-button"
               onClick={onPreview}
-              aria-label={`Предпросмотр: ${task.card.title}`}
+              aria-label={`${t("Предпросмотр")}: ${t(task.card.title)}`}
               aria-pressed={selected}
             >
               <Eye size={16} />
@@ -315,7 +317,7 @@ export function TaskCard({
             <Link
               href={`/tasks/${task.id}`}
               className="icon-button"
-              aria-label={`Открыть задачу: ${task.card.title}`}
+              aria-label={`${t("Открыть задачу")}: ${t(task.card.title)}`}
             >
               <ArrowUpRight size={19} />
             </Link>

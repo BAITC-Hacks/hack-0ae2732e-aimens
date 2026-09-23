@@ -270,6 +270,22 @@ img {
   align-items: center;
   gap: 16px;
 }
+.language-control select {
+  min-width: 68px;
+  height: 36px;
+  padding: 0 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  background: var(--color-surface);
+  color: var(--color-primary-hover);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.language-control select:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
 .profile-menu {
   position: relative;
 }
