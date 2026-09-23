@@ -52,6 +52,173 @@
 .stageTitle {
   margin-bottom: 12px;
 }
+.fillToolbar {
+  margin: 20px 0;
+}
+.fieldAiAction {
+  display: flex;
+  justify-content: flex-end;
+  margin: 8px 0;
+}
+.fieldAiAction button {
+  font-size: 12px;
+  padding: 6px 10px;
+}
+.stageFields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.stageFields:disabled {
+  opacity: 0.65;
+}
+.analysisPending,
+.analysisMode {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px;
+  margin: 0 0 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--green-soft);
+}
+.analysisPending {
+  flex-wrap: wrap;
+}
+.analysisPending > div {
+  display: flex;
+  gap: 12px;
+  flex: 1 1 260px;
+}
+.analysisPending svg,
+.analysisMode > svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: var(--green-dark);
+}
+.analysisPending strong,
+.analysisMode strong {
+  font-size: 14px;
+}
+.analysisPending p,
+.analysisMode p {
+  margin: 5px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.localMode {
+  background: var(--background);
+}
+.sectionHeading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.sectionHeading h3 {
+  margin: 0;
+  font-size: 17px;
+}
+.sectionHeading > span {
+  min-width: 24px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--background);
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+.evidence {
+  margin-bottom: 28px;
+}
+.evidence .intro {
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+.suggestions {
+  display: grid;
+  gap: 12px;
+}
+.suggestion {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 18px;
+}
+.suggestion h4 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+.suggestion > p {
+  font-size: 14px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.suggestion blockquote {
+  margin: 12px 0;
+}
+.suggestion small {
+  display: block;
+  margin-top: 8px;
+  color: var(--muted);
+}
+.suggestionActions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.suggestionActions :global(.button) {
+  font-size: 12px;
+  padding: 8px 12px;
+}
+.dismissSuggestion {
+  font-size: 12px;
+  color: var(--muted);
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.accepted {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--green-dark);
+  font-size: 13px;
+}
+.emptyEvidence {
+  color: var(--muted);
+  font-size: 13px;
+  padding: 16px;
+  border-left: 2px solid var(--line);
+  background: var(--background);
+}
+.missing {
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+  margin-bottom: 28px;
+}
+.missing h3 {
+  font-size: 13px;
+  margin-bottom: 10px;
+  color: var(--muted);
+}
+.missing ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.missing li {
+  border: 1px solid var(--line);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
 .stageTitle:focus {
   outline: none;
 }
@@ -118,6 +285,12 @@
   display: grid;
   grid-template-columns: 30px minmax(0, 1fr);
   gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.question:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
 }
 .questionNumber {
   display: grid;

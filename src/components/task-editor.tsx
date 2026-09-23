@@ -49,6 +49,9 @@ export function TaskEditor({ task }: { task?: Task }) {
     setAcknowledged,
     confirm,
     analyze,
+    cancelAnalysis,
+    acceptSuggestion,
+    rejectSuggestion,
     save,
   } = builder;
   if (actor !== "business")
@@ -86,7 +89,8 @@ export function TaskEditor({ task }: { task?: Task }) {
               : "Хорошее решение начинается с задачи"}
           </h1>
           <p>
-            От первого описания до понятного брифа для студенческой команды.
+            Опишите потребность, ответьте на вопросы и подтвердите карточку.
+            Помощник предлагает — решение остаётся за вами.
           </p>
         </div>
       </div>
@@ -131,136 +135,171 @@ export function TaskEditor({ task }: { task?: Task }) {
               {error}
             </div>
           )}
-          {step === 0 && (
-            <DraftStep
-              card={card}
-              raw={raw}
-              disabled={analyzing || busy}
-              setRaw={setRaw}
-              update={update}
-            />
+          {analyzing && (
+            <div className={styles.analysisPending}>
+              <div role="status">
+                <LoaderCircle size={18} className="spin" aria-hidden="true" />
+                <div>
+                  <strong>Проверяем полноту описания</strong>
+                  <p>
+                    Ищем сведения в вашем тексте и готовим 3–5 уточняющих
+                    вопросов.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="button secondary"
+                onClick={cancelAnalysis}
+              >
+                Отменить анализ
+              </button>
+            </div>
           )}
-          {step === 1 && analysis && (
-            <ClarificationStep
-              analysis={analysis}
-              card={card}
-              update={update}
-            />
-          )}
-          {step === 2 && (
-            <>
-              <CardFields
+          <fieldset
+            className={styles.stageFields}
+            disabled={busy || analyzing}
+            aria-label={headings[step]}
+          >
+            {step === 0 && (
+              <DraftStep
                 card={card}
                 raw={raw}
+                disabled={analyzing || busy}
                 setRaw={setRaw}
                 update={update}
-                analysis={analysis}
               />
-              <button
-                type="button"
-                className="button secondary"
-                disabled={busy || analyzing}
-                onClick={analyze}
-              >
-                {analyzing ? "Анализируем карточку…" : "Повторно уточнить с AI"}
-              </button>
-            </>
-          )}
-          {step === 3 && (
-            <PublishStep
-              card={card}
-              raw={raw}
-              company={task?.company ?? "Моя компания"}
-              acknowledged={acknowledged}
-              confirmed={confirmed}
-              setAcknowledged={setAcknowledged}
-              confirm={confirm}
-              edit={() => goToStep(2)}
-            />
-          )}
-          <div className={`form-actions ${styles.actions}`}>
-            {step === 1 && (
-              <button
-                type="button"
-                className="button secondary"
-                disabled={busy}
-                onClick={() => goToStep(0)}
-              >
-                <ArrowLeft size={15} />
-                Назад
-              </button>
             )}
-            {!task?.publishedAt && (
-              <button
-                type="button"
-                className="button secondary"
-                disabled={busy || analyzing}
-                onClick={() => save(false)}
-              >
-                <Save size={15} />
-                Сохранить черновик
-              </button>
-            )}
-            {step === 0 && (
-              <button
-                type="button"
-                className="button primary push"
-                disabled={busy || analyzing}
-                onClick={analyze}
-              >
-                {analyzing ? (
-                  <LoaderCircle size={16} className="spin" />
-                ) : (
-                  <Sparkles size={16} />
-                )}
-                {analyzing ? "Анализируем описание…" : "Помочь с описанием"}
-              </button>
-            )}
-            {step === 1 && (
-              <button
-                type="button"
-                className="button primary push"
-                disabled={busy}
-                onClick={() => goToStep(2)}
-              >
-                Перейти к карточке
-                <ArrowRight size={16} />
-              </button>
+            {step === 1 && analysis && (
+              <ClarificationStep
+                analysis={analysis}
+                card={card}
+                update={update}
+                acceptSuggestion={acceptSuggestion}
+                rejectSuggestion={rejectSuggestion}
+                fillWithAI={builder.fillWithAI}
+                fillMessage={builder.fillMessage}
+              />
             )}
             {step === 2 && (
-              <button
-                type="button"
-                className="button primary push"
-                disabled={busy}
-                onClick={() => goToStep(3)}
-              >
-                <Eye size={16} />
-                Предпросмотр
-              </button>
+              <>
+                <CardFields
+                  card={card}
+                  raw={raw}
+                  setRaw={setRaw}
+                  update={update}
+                  analysis={analysis}
+                  fillWithAI={builder.fillWithAI}
+                  fillMessage={builder.fillMessage}
+                />
+                <button
+                  type="button"
+                  className="button secondary"
+                  disabled={busy || analyzing}
+                  onClick={analyze}
+                >
+                  {analyzing
+                    ? "Анализируем карточку…"
+                    : "Повторно уточнить с AI"}
+                </button>
+              </>
             )}
             {step === 3 && (
-              <button
-                type="button"
-                className="button primary push"
-                disabled={busy || !confirmed}
-                onClick={() => save(true)}
-              >
-                {busy ? (
-                  <LoaderCircle size={16} className="spin" />
-                ) : (
-                  <Send size={16} />
-                )}
-                {task?.publishedAt
-                  ? "Сохранить изменения"
-                  : "Опубликовать задачу"}
-              </button>
+              <PublishStep
+                card={card}
+                raw={raw}
+                company={task?.company ?? "Моя компания"}
+                acknowledged={acknowledged}
+                confirmed={confirmed}
+                setAcknowledged={setAcknowledged}
+                confirm={confirm}
+                edit={() => goToStep(2)}
+              />
             )}
-          </div>
-          <p className={styles.saveNote}>
-            {task?.publishedAt
-              ? "В каталоге появятся только сохранённые и подтверждённые изменения."
-              : "Черновик виден только бизнесу. Публикация — отдельный шаг."}
-          </p>
+            <div className={`form-actions ${styles.actions}`}>
+              {step === 1 && (
+                <button
+                  type="button"
+                  className="button secondary"
+                  disabled={busy}
+                  onClick={() => goToStep(0)}
+                >
+                  <ArrowLeft size={15} />
+                  Назад
+                </button>
+              )}
+              {!task?.publishedAt && (
+                <button
+                  type="button"
+                  className="button secondary"
+                  disabled={busy || analyzing}
+                  onClick={() => save(false)}
+                >
+                  <Save size={15} />
+                  Сохранить черновик
+                </button>
+              )}
+              {step === 0 && (
+                <button
+                  type="button"
+                  className="button primary push"
+                  disabled={busy || analyzing}
+                  onClick={analyze}
+                >
+                  {analyzing ? (
+                    <LoaderCircle size={16} className="spin" />
+                  ) : (
+                    <Sparkles size={16} />
+                  )}
+                  {analyzing ? "Анализируем описание…" : "Помочь с описанием"}
+                </button>
+              )}
+              {step === 1 && (
+                <button
+                  type="button"
+                  className="button primary push"
+                  disabled={busy}
+                  onClick={() => goToStep(2)}
+                >
+                  Перейти к карточке
+                  <ArrowRight size={16} />
+                </button>
+              )}
+              {step === 2 && (
+                <button
+                  type="button"
+                  className="button primary push"
+                  disabled={busy}
+                  onClick={() => goToStep(3)}
+                >
+                  <Eye size={16} />
+                  Предпросмотр
+                </button>
+              )}
+              {step === 3 && (
+                <button
+                  type="button"
+                  className="button primary push"
+                  disabled={busy || !confirmed}
+                  onClick={() => save(true)}
+                >
+                  {busy ? (
+                    <LoaderCircle size={16} className="spin" />
+                  ) : (
+                    <Send size={16} />
+                  )}
+                  {task?.publishedAt
+                    ? "Сохранить изменения"
+                    : "Опубликовать задачу"}
+                </button>
+              )}
+            </div>
+            <p className={styles.saveNote}>
+              {task?.publishedAt
+                ? "В каталоге появятся только сохранённые и подтверждённые изменения."
+                : "Черновик виден только бизнесу. Публикация — отдельный шаг."}
+            </p>
+          </fieldset>
         </section>
         <aside className="sticky-aside">
           <ScorePanel card={card} preview />

@@ -20,8 +20,9 @@ export function DraftStep({
   return (
     <>
       <p className={styles.intro}>
-        Расскажите своими словами, какую проблему вы хотите решить. Начнём с
-        того, что уже известно.
+        Опишите, что происходит сейчас и что хочется изменить. Не нужно
+        составлять техническое задание: помощник найдёт пробелы и задаст
+        вопросы.
       </p>
       <label className="field">
         <span>Описание задачи</span>
@@ -50,7 +51,7 @@ export function DraftStep({
       </label>
       <div className={styles.examples}>
         <h3>
-          <Sparkles size={16} aria-hidden="true" /> Начните с похожей ситуации
+          <Sparkles size={16} aria-hidden="true" /> Примеры исходных описаний
         </h3>
         <div className={styles.exampleGrid}>
           {draftExamples.map((example) => (
@@ -70,8 +71,8 @@ export function DraftStep({
         </div>
       </div>
       <p className={styles.hint}>
-        Помощник задаст 3–5 вопросов. Вы сможете проверить и изменить каждое
-        поле перед публикацией.
+        Помощник заполнит пустые поля сведениями из вашего текста и задаст 3–5
+        вопросов. Проверьте и отредактируйте карточку перед публикацией.
       </p>
       <p className={styles.hint}>
         Если включён OpenAI, описание и заполненные поля передаются внешнему

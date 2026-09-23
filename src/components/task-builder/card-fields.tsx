@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { Sparkles } from "lucide-react";
 import {
   Card,
+  FieldKey,
   Analysis,
   fields,
   accessLabels,
@@ -16,19 +18,23 @@ export function CardFields({
   setRaw,
   update,
   analysis,
+  fillWithAI,
+  fillMessage,
 }: {
   card: Card;
   raw: string;
   setRaw: (value: string) => void;
   update: UpdateCard;
   analysis: Analysis | null;
+  fillWithAI: (field?: FieldKey) => void;
+  fillMessage: string;
 }) {
   const [skillText, setSkillText] = useState(card.skills.join(", "));
   return (
     <>
       <p className={styles.intro}>
-        Собрали ваши ответы в карточку. Дополните важные для команды детали и
-        проверьте формулировки.
+        Здесь ваши ответы и принятые фрагменты описания. Каждое поле можно
+        отредактировать. Рейтинг справа пересчитывается по мере заполнения.
       </p>
       <fieldset className={styles.fieldGroup}>
         <legend>
@@ -105,6 +111,23 @@ export function CardFields({
           />
         </label>
       </fieldset>
+      <div className={styles.fillToolbar}>
+        <button
+          type="button"
+          className="button secondary"
+          onClick={() => fillWithAI()}
+        >
+          <Sparkles size={16} aria-hidden="true" /> Заполнить пустые поля с ИИ
+        </button>
+        <p className={styles.hint}>
+          Только сведения из вашего описания. Введённые ответы сохранятся.
+        </p>
+      </div>
+      {fillMessage && (
+        <p role="status" className="info-note">
+          {fillMessage}
+        </p>
+      )}
       {[
         { title: "Проблема и участники", keys: ["context", "need", "users"] },
         {
@@ -129,6 +152,22 @@ export function CardFields({
             .filter((field) => group.keys.includes(field.key))
             .map((field) => (
               <div key={field.key}>
+                <div className={styles.fieldAiAction}>
+                  <button
+                    type="button"
+                    className="button secondary"
+                    disabled={Boolean(card[field.key].trim())}
+                    title={
+                      card[field.key].trim()
+                        ? "Поле уже заполнено — текст можно редактировать ниже"
+                        : "Найти сведения в исходном описании"
+                    }
+                    onClick={() => fillWithAI(field.key)}
+                  >
+                    <Sparkles size={14} aria-hidden="true" /> Заполнить с ИИ
+                    <span className="sr-only">: {field.label}</span>
+                  </button>
+                </div>
                 <label className="field">
                   <span>{field.label}</span>
                   {["contact", "successTarget"].includes(field.key) ? (
