@@ -119,47 +119,51 @@ export function ScorePanel({
 export function TaskCard({ task }: { task: Task }) {
   return (
     <article className="task-card">
-      <div className="task-card-top">
-        <div className={`company-mark topic-${task.card.topic}`}>
-          {task.company.slice(0, 1)}
+      <div className="task-card-content">
+        <div className="task-card-top">
+          <div className="company-mark" aria-hidden="true">
+            {task.company.slice(0, 1)}
+          </div>
+          <div className="company-info">
+            <strong>{task.company}</strong>
+            <span>{task.card.topic}</span>
+          </div>
+          <Badge readiness={task.readiness} />
         </div>
-        <div className="company-info">
-          <strong>{task.company}</strong>
-          <span>Астана · {task.card.topic}</span>
-        </div>
-        <Badge readiness={task.readiness} />
-      </div>
-      <h2>
-        <Link href={`/tasks/${task.id}`}>{task.card.title}</Link>
-      </h2>
-      <p className="task-summary">
-        {task.card.need ||
-          task.card.context ||
-          "Бизнес уточняет детали этой задачи."}
-      </p>
-      <div className="task-tags">
-        <span>{task.card.topic}</span>
-        <span>
-          {task.readiness.breakdown.find(
-            (row) => row.field === "dataDescription",
-          )?.complete
-            ? "Данные доступны"
-            : "Данные уточняются"}
-        </span>
-      </div>
-      <div className="task-card-footer">
-        <span className="score-inline">
-          <span className="mini-track">
-            <i style={{ width: `${task.readiness.score}%` }} />
+        <h2>
+          <Link href={`/tasks/${task.id}`}>{task.card.title}</Link>
+        </h2>
+        <p className="task-summary">
+          {task.card.need ||
+            task.card.context ||
+            "Бизнес уточняет детали этой задачи."}
+        </p>
+        <div className="task-card-footer">
+          <span>
+            {task.readiness.breakdown.find(
+              (row) => row.field === "dataDescription",
+            )?.complete
+              ? "Данные доступны"
+              : "Данные уточняются"}
           </span>
-          <strong>{task.readiness.score}</strong>/100
+          <span className="subtle">
+            <MessageSquare size={16} aria-hidden="true" />
+            {task.proposalCount} откликов
+          </span>
+        </div>
+      </div>
+      <div className="task-card-action">
+        <span className="readiness-value">
+          <strong>{task.readiness.score}</strong>
+          <span>/ 100</span>
         </span>
-        <span className="subtle">
-          <MessageSquare size={14} />
-          {task.proposalCount} откликов
-        </span>
-        <Link href={`/tasks/${task.id}`} className="text-link">
-          Подробнее <ArrowUpRight size={16} />
+        <span className="readiness-caption">готовность задачи</span>
+        <Link
+          href={`/tasks/${task.id}`}
+          className="text-link"
+          aria-label={`Открыть задачу: ${task.card.title}`}
+        >
+          Открыть <ArrowUpRight size={18} />
         </Link>
       </div>
     </article>

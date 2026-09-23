@@ -1,0 +1,83 @@
+:root {
+  /* Primitive tokens */
+  --color-ink-950: #050c2a;
+  --color-ink-800: #263247;
+  --color-ink-600: #48566a;
+  --color-blue-700: #082db2;
+  --color-blue-600: #0a3fee;
+  --color-blue-50: #edf2ff;
+  --color-orange-500: #ff7000;
+  --color-white: #ffffff;
+  --color-gray-50: #f6f8fb;
+  --color-gray-100: #eef1f5;
+  --color-gray-200: #d9e0e9;
+  --color-red-700: #a2232d;
+  --color-red-50: #fff1f1;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  --font-xs: 12px;
+  --font-sm: 14px;
+  --font-md: 16px;
+  --font-lg: 20px;
+  --font-xl: 24px;
+  --font-2xl: 32px;
+  --font-3xl: 40px;
+  --font-4xl: 56px;
+
+  --radius-xs: 6px;
+  --radius-sm: 12px;
+  --radius-md: 20px;
+  --radius-pill: 9999px;
+  --motion-instant: 150ms;
+  --motion-fast: 200ms;
+  --motion-normal: 300ms;
+
+  /* Semantic tokens */
+  --color-background: var(--color-gray-50);
+  --color-surface: var(--color-white);
+  --color-surface-soft: var(--color-gray-100);
+  --color-text: var(--color-ink-950);
+  --color-text-secondary: var(--color-ink-600);
+  --color-border: var(--color-gray-200);
+  --color-primary: var(--color-blue-600);
+  --color-primary-hover: var(--color-blue-700);
+  --color-primary-soft: var(--color-blue-50);
+  --color-accent: var(--color-orange-500);
+  --color-error: var(--color-red-700);
+  --color-error-soft: var(--color-red-50);
+  --color-focus: var(--color-blue-600);
+  --font-sans: "DM Sans", "Segoe UI", sans-serif;
+
+  /* Component tokens */
+  --button-primary-bg: var(--color-primary);
+  --button-primary-fg: var(--color-white);
+  --button-primary-hover: var(--color-primary-hover);
+  --button-secondary-bg: var(--color-white);
+  --button-secondary-fg: var(--color-primary);
+  --field-bg: var(--color-white);
+  --field-border: var(--color-border);
+  --card-bg: var(--color-surface);
+  --card-border: var(--color-border);
+  --card-radius: var(--radius-sm);
+
+  /* Aliases for components still using the original variable names */
+  --background: var(--color-background);
+  --surface: var(--color-surface);
+  --ink: var(--color-text);
+  --muted: var(--color-text-secondary);
+  --line: var(--color-border);
+  --green: var(--color-primary);
+  --green-dark: var(--color-primary-hover);
+  --green-soft: var(--color-primary-soft);
+  --radius: var(--radius-sm);
+}

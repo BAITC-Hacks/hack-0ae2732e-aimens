@@ -1,7 +1,13 @@
 import type { Metadata } from "next";
 import { DemoProvider } from "@/components/demo-provider";
 import { Shell } from "@/components/shell";
+import "@fontsource/dm-sans/400.css";
+import "@fontsource/dm-sans/500.css";
+import "@fontsource/dm-sans/600.css";
+import "@fontsource/dm-sans/700.css";
 import "./globals.css";
+import "./tokens.css";
+import "./redesign.css";
 export const metadata: Metadata = {
   title: "Практика — реальные задачи, новые возможности",
   description:

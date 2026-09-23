@@ -30,4 +30,5 @@ test-results/
 playwright-report/
 *.tsbuildinfo
 .next-e2e/
+.next-design/
 next-env.d.ts

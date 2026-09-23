@@ -1,5 +1,35 @@
 import { test, expect } from "@playwright/test";
 
+test("mobile navigation stays named and the catalog does not overflow", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 700 });
+  await page.goto("/");
+  const navigation = page.getByRole("navigation", {
+    name: "Основная навигация",
+  });
+  await expect(
+    navigation.getByRole("link", { name: "Каталог задач" }),
+  ).toBeVisible();
+  await expect(navigation.getByText("Каталог", { exact: true })).toBeVisible();
+  await expect(
+    navigation.getByRole("link", { name: "Как это работает" }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(320);
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("link", { name: "К содержимому" })).toBeFocused();
+  await expect(page.getByRole("link", { name: "К содержимому" })).toHaveCSS(
+    "outline-width",
+    "3px",
+  );
+  await page.setViewportSize({ width: 1030, height: 714 });
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(1030);
+});
+
 test("business and a team complete the whole workflow", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
@@ -137,7 +167,10 @@ test("all pages work and catalog filters do not restrict team access", async ({
   await page.getByLabel("Демопрофиль").selectOption("team-5");
   await expect(page.locator(".task-card")).toHaveCount(1);
   await page
-    .getByRole("link", { name: "Найдите главное в отзывах клиентов" })
+    .getByRole("link", {
+      name: "Найдите главное в отзывах клиентов",
+      exact: true,
+    })
     .click();
   await expect(
     page.getByRole("heading", { name: "Предложите своё решение" }),
@@ -154,7 +187,7 @@ test("all pages work and catalog filters do not restrict team access", async ({
     .getByRole("link", { name: "Команды", exact: true })
     .click();
   await expect(page.locator(".team-card")).toHaveCount(5);
-  await page.getByRole("link", { name: "Гид по платформе" }).click();
+  await page.getByRole("link", { name: "Как это работает" }).click();
   await expect(
     page.getByRole("heading", { name: "Из чего складывается рейтинг" }),
   ).toBeVisible();
