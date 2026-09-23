@@ -1638,6 +1638,97 @@ legend {
   width: 52px;
   height: 52px;
 }
+.profile-create-team {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid var(--color-border);
+  padding: 16px 0 10px;
+  margin-top: 4px;
+}
+.profile-create-team .text-link {
+  justify-content: flex-start;
+}
+.create-team-form {
+  margin-top: 20px;
+}
+.team-choice-group {
+  border: 0;
+  padding: 0;
+  margin: 24px 0;
+  min-width: 0;
+}
+.team-choice-group legend {
+  font-size: 14px;
+  font-weight: 650;
+  margin-bottom: 12px;
+}
+.team-choice-group legend small {
+  color: var(--color-text-secondary);
+  font-weight: 400;
+  margin-left: 6px;
+}
+.team-topic-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.team-topic-option {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  border: 1px solid var(--color-border);
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  font-size: 13px;
+}
+.team-topic-option.selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+.team-topic-option input {
+  accent-color: var(--color-primary);
+  margin: 0;
+}
+.team-icon-options {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+.team-icon-option {
+  position: relative;
+  min-height: 82px;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 7px;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  background: white;
+  color: var(--color-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+.team-icon-option svg {
+  color: var(--color-primary-hover);
+}
+.team-icon-option:hover,
+.team-icon-option.selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+.icon-choice-check {
+  position: absolute;
+  right: 5px;
+  top: 5px;
+  color: var(--color-primary);
+}
+.narrow-page {
+  max-width: 900px;
+  margin-inline: auto;
+}
 .team-card h2 {
   font-size: 24px;
   letter-spacing: -0.5px;
@@ -2439,4 +2530,6 @@ legend {
 @media (max-width: 600px) {
   .team-journey ol { grid-template-columns: 1fr; }
   .team-journey .section-title { display: grid; }
+  .team-icon-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .page-heading:has(> .button) { align-items: flex-start; flex-direction: column; }
 }

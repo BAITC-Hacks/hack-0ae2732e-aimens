@@ -4,20 +4,28 @@ import { emptyCard } from "../../src/domain/task";
 test("business compares proposals and independently selects two teams", async ({
   page,
 }) => {
+  const card = {
+    ...emptyCard,
+    title: "E2E: сравнение подходов команд",
+    topic: "Маркетинг",
+    workFormat: "hybrid" as const,
+    skills: ["Python", "Аналитика"],
+  };
+  const rawDescription = "Хотим быстрее понимать обратную связь клиентов.";
+  const reviewResponse = await page.request.post("/api/review-task", {
+    data: { rawDescription, card },
+  });
+  expect(reviewResponse.ok()).toBeTruthy();
+  const { reviewToken } = await reviewResponse.json();
   const taskResponse = await page.request.post("/api/demo", {
     headers: { "x-demo-actor": "business" },
     data: {
       type: "save-task",
-      card: {
-        ...emptyCard,
-        title: "E2E: сравнение подходов команд",
-        topic: "Маркетинг",
-        workFormat: "hybrid",
-        skills: ["Python", "Аналитика"],
-      },
-      rawDescription: "Хотим быстрее понимать обратную связь клиентов.",
+      card,
+      rawDescription,
       confirmed: true,
       publish: true,
+      reviewToken,
     },
   });
   expect(taskResponse.ok()).toBeTruthy();

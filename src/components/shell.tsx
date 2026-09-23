@@ -98,7 +98,7 @@ export function Shell({ children }: { children: ReactNode }) {
               <div className="profile-dropdown">
                 <p className="eyebrow">ДЕМО-РЕЖИМ</p>
                 <label className="field">
-                  <span>Роль и команда</span>
+                  <span>Профиль для просмотра</span>
                   <select
                     aria-label="Демопрофиль"
                     value={actor}
@@ -116,6 +116,20 @@ export function Shell({ children }: { children: ReactNode }) {
                     ))}
                   </select>
                 </label>
+                <div className="profile-create-team">
+                  <span className="text-small muted">
+                    Хотите участвовать как команда?
+                  </span>
+                  <Link
+                    className="text-link"
+                    href="/teams/new"
+                    onClick={() => {
+                      if (menu.current) menu.current.open = false;
+                    }}
+                  >
+                    Создать свою команду <ArrowRight size={16} />
+                  </Link>
+                </div>
                 <Link
                   className="profile-workspace"
                   onClick={() => {

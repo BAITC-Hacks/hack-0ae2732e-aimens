@@ -1,14 +1,17 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { ArrowUpRight, Award, GraduationCap, Users } from "lucide-react";
+import Link from "next/link";
+import { ArrowUpRight, Award, GraduationCap, Plus, Users } from "lucide-react";
 import { useDemo } from "@/components/demo-provider";
 import { DataGate } from "@/components/ui";
+import { TeamIcon } from "@/components/team-icon";
 
 export default function TeamsPage() {
   const { data, actor, setActor } = useDemo();
   const router = useRouter();
   const rankedTeams = [...(data?.teams ?? [])].sort(
-    (left, right) => right.points - left.points || left.name.localeCompare(right.name, "ru"),
+    (left, right) =>
+      right.points - left.points || left.name.localeCompare(right.name, "ru"),
   );
   return (
     <DataGate>
@@ -16,16 +19,30 @@ export default function TeamsPage() {
         <div>
           <div className="eyebrow">КОМАНДЫ SANALINK</div>
           <h1>Команды, готовые пробовать</h1>
-          <p>Баллы показывают подтверждённые бизнесом первые результаты. При равенстве команды делят место.</p>
+          <p>
+            Баллы показывают подтверждённые бизнесом первые результаты. При
+            равенстве команды делят место.
+          </p>
         </div>
+        <Link className="button primary" href="/teams/new">
+          <Plus size={17} /> Создать свою команду
+        </Link>
       </div>
       <div className="team-grid">
         {rankedTeams.map((team) => (
           <article className="team-card" key={team.id}>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <div className="team-avatar">{team.initials}</div>
-              <span className="team-rank" aria-label={`${rankedTeams.findIndex((candidate) => candidate.points === team.points) + 1} место`}>
-                #{rankedTeams.findIndex((candidate) => candidate.points === team.points) + 1}
+              <div className="team-avatar" title={team.iconKey ?? "Шанырак"}>
+                <TeamIcon iconKey={team.iconKey} size={28} />
+              </div>
+              <span
+                className="team-rank"
+                aria-label={`${rankedTeams.findIndex((candidate) => candidate.points === team.points) + 1} место`}
+              >
+                #
+                {rankedTeams.findIndex(
+                  (candidate) => candidate.points === team.points,
+                ) + 1}
               </span>
               {actor === team.id && (
                 <span className="text-green text-small">Ваш профиль</span>

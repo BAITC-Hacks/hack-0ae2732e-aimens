@@ -35,7 +35,7 @@ test("home search, categories and primary navigation lead to working pages", asy
   const errors = browserErrors(page);
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toContainText(
-    "Реальные задачи.",
+    "Опишите задачу.",
   );
   await expect(page.locator(".featured-grid .task-card")).toHaveCount(3);
   await page.getByLabel("Поиск задач на главной").fill("Bilim");
@@ -271,7 +271,7 @@ test("preview opens the selected task and recommendations keep the whole catalog
     results.locator('[data-task-id="task-marketing"]'),
   ).toBeVisible();
   await switchProfile(page, "team-5");
-  await expect(recommended).toContainText("Jas AI");
+  await expect(recommended).toContainText("Arqa Tech");
   await expect.poll(() => catalogIds(page)).toEqual(allTaskIds);
   await results
     .locator('[data-task-id="task-marketing"]')

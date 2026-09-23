@@ -1,5 +1,5 @@
-import { ArrowUpRight, Sparkles } from "lucide-react";
-import { Card, topics } from "@/domain/task";
+import { ArrowUpRight, Sparkles, WandSparkles } from "lucide-react";
+import { Card, TopicSuggestion, topics } from "@/domain/task";
 import { draftExamples } from "@/domain/demo-data";
 import { UpdateCard } from "./use-task-builder";
 import styles from "./task-builder.module.css";
@@ -10,12 +10,18 @@ export function DraftStep({
   disabled,
   setRaw,
   update,
+  suggestTopic,
+  suggestingTopic,
+  topicSuggestion,
 }: {
   raw: string;
   card: Card;
   disabled: boolean;
   setRaw: (value: string) => void;
   update: UpdateCard;
+  suggestTopic: () => void;
+  suggestingTopic: boolean;
+  topicSuggestion: TopicSuggestion | null;
 }) {
   return (
     <>
@@ -36,6 +42,26 @@ export function DraftStep({
         />
         <small className={styles.counter}>{raw.length} / 4000</small>
       </label>
+      <div className={styles.topicSuggestion}>
+        <button
+          type="button"
+          className="button secondary"
+          disabled={disabled || suggestingTopic}
+          onClick={suggestTopic}
+        >
+          <WandSparkles size={16} />
+          {suggestingTopic
+            ? "Подбираем направление…"
+            : "Не знаю тему — определить по описанию"}
+        </button>
+        {topicSuggestion && (
+          <small role="status">
+            Предлагаем: <strong>{topicSuggestion.topic}</strong> ·{" "}
+            {Math.round(topicSuggestion.confidence * 100)}% уверенности.{" "}
+            {topicSuggestion.reason}
+          </small>
+        )}
+      </div>
       <label className="field">
         <span>Тема</span>
         <select

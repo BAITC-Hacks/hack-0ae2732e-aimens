@@ -169,7 +169,10 @@ export default function TaskPage({
               )}
             </div>
             <aside className="sticky-aside stack">
-              <ScorePanel card={task.confirmedAt ? task.card : emptyCard} />
+              <ScorePanel
+                card={task.confirmedAt ? task.card : emptyCard}
+                assessment={task.qualityAssessment}
+              />
               <section className="panel">
                 <h2>{task.company}</h2>
                 <p className="muted text-small">{task.card.topic}</p>
@@ -200,7 +203,7 @@ export default function TaskPage({
                     style={{ marginTop: 17, width: "100%" }}
                     onClick={() => setActor("team-1")}
                   >
-                    Стать Nomad Labs
+                    Стать Qyran Lab
                     <ArrowUpRight size={15} />
                   </button>
                 </div>

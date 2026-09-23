@@ -62,6 +62,10 @@ test("preview needs confirmation and permits publication at low readiness", asyn
   await page.getByRole("button", { name: "Перейти к карточке" }).click();
   await page.getByLabel("Название задачи").fill("");
   await page.getByRole("button", { name: "Предпросмотр", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Анализ задачи и финальная оценка" })
+    .click();
+  await expect(page.getByText(/\/ 100 баллов/)).toBeVisible();
   await page.getByRole("checkbox", { name: /Я проверил/ }).check();
   await page
     .getByRole("button", { name: "Подтвердить карточку", exact: true })
@@ -78,6 +82,10 @@ test("preview needs confirmation and permits publication at low readiness", asyn
   const title = `E2E: задача с низким рейтингом ${Date.now()}`;
   await page.getByLabel("Название задачи").fill(title);
   await page.getByRole("button", { name: "Предпросмотр", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Анализ задачи и финальная оценка" })
+    .click();
+  await expect(page.getByText(/\/ 100 баллов/)).toBeVisible();
   await page.getByRole("checkbox", { name: /Я проверил/ }).check();
   await page
     .getByRole("button", { name: "Подтвердить карточку", exact: true })
@@ -94,6 +102,10 @@ test("preview needs confirmation and permits publication at low readiness", asyn
       "Хотим лучше понимать пожелания посетителей магазина. Сейчас читаем отзывы вручную.",
     );
   await page.getByRole("button", { name: "Предпросмотр", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Анализ задачи и финальная оценка" })
+    .click();
+  await expect(page.getByText(/\/ 100 баллов/)).toBeVisible();
   await expect(
     page.getByRole("checkbox", { name: /Я проверил/ }),
   ).not.toBeChecked();

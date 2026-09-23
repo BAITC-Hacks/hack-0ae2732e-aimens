@@ -13,6 +13,7 @@ import {
 import { Proposal, Task } from "@/domain/task";
 import { useDemo } from "./demo-provider";
 import { Status } from "./ui";
+import { TeamIcon } from "./team-icon";
 
 export function ProposalForm({ task }: { task: Task }) {
   const { actor, act, busy, data } = useDemo();
@@ -200,7 +201,9 @@ export function ProposalCard({
   return (
     <article className="proposal-card" id={`proposal-${proposal.id}`}>
       <div className="proposal-header">
-        <div className="team-avatar">{team?.initials}</div>
+        <div className="team-avatar">
+          <TeamIcon iconKey={team?.iconKey} />
+        </div>
         <div>
           <h3>{team?.name}</h3>
           <p className="team-profile-meta text-small muted">

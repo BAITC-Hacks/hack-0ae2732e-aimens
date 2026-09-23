@@ -38,7 +38,13 @@ export function TaskEditor({ task }: { task?: Task }) {
     busy,
     analyzing,
     analysis,
+    preliminaryReadiness,
     confirmed,
+    qualityAssessment,
+    reviewing,
+    suggestTopic,
+    suggestingTopic,
+    topicSuggestion,
     goToStep,
     update,
     setRaw,
@@ -48,6 +54,7 @@ export function TaskEditor({ task }: { task?: Task }) {
     setAcknowledged,
     confirm,
     analyze,
+    reviewTask,
     save,
   } = builder;
   if (actor !== "business")
@@ -134,6 +141,9 @@ export function TaskEditor({ task }: { task?: Task }) {
               disabled={analyzing || busy}
               setRaw={setRaw}
               update={update}
+              suggestTopic={suggestTopic}
+              suggestingTopic={suggestingTopic}
+              topicSuggestion={topicSuggestion}
             />
           )}
           {step === 1 && analysis && (
@@ -172,6 +182,9 @@ export function TaskEditor({ task }: { task?: Task }) {
               setAcknowledged={setAcknowledged}
               confirm={confirm}
               edit={() => goToStep(2)}
+              qualityAssessment={qualityAssessment}
+              reviewing={reviewing}
+              reviewTask={reviewTask}
             />
           )}
           <div className={`form-actions ${styles.actions}`}>
@@ -259,7 +272,12 @@ export function TaskEditor({ task }: { task?: Task }) {
           </p>
         </section>
         <aside className="sticky-aside">
-          <ScorePanel card={card} preview />
+          <ScorePanel
+            card={card}
+            assessment={qualityAssessment}
+            provisional={preliminaryReadiness}
+            preview
+          />
         </aside>
       </div>
     </>

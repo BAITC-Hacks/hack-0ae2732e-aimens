@@ -16,6 +16,8 @@ import {
   Card,
   computeReadiness,
   levels,
+  readinessLevel,
+  QualityAssessment,
   workFormatLabels,
 } from "@/domain/task";
 import { useDemo } from "./demo-provider";
@@ -64,14 +66,45 @@ export function Badge({ readiness }: { readiness: Readiness }) {
     </span>
   );
 }
+function reviewedReadiness(card: Card, assessment?: QualityAssessment | null) {
+  const provisional = computeReadiness(card);
+  if (!assessment) return provisional;
+
+  const breakdown = provisional.breakdown.map((row) => {
+    const dimension = assessment.dimensions.find(
+      (candidate) => candidate.field === row.field,
+    );
+    if (!dimension) return row;
+    return {
+      ...row,
+      label: dimension.label || row.label,
+      max: dimension.max,
+      earned: dimension.score,
+      complete: dimension.score >= dimension.max,
+      tip: dimension.reason || row.tip,
+    };
+  });
+  return {
+    score: assessment.score,
+    level: readinessLevel(assessment.score),
+    breakdown,
+    missing: breakdown.filter((row) => !row.complete),
+  };
+}
 export function ScorePanel({
   card,
+  assessment,
+  provisional,
   preview = false,
 }: {
   card: Card;
+  assessment?: QualityAssessment | null;
+  provisional?: Readiness | null;
   preview?: boolean;
 }) {
-  const result = computeReadiness(card);
+  const result = assessment
+    ? reviewedReadiness(card, assessment)
+    : (provisional ?? computeReadiness(card));
   const nextLevel = levels.find((level) => level.min > result.score);
   const nextActions = [...result.missing]
     .sort((left, right) => right.max - left.max)
@@ -79,14 +112,20 @@ export function ScorePanel({
   return (
     <section className="panel score-panel">
       <div className="eyebrow">
-        {preview ? "ПРЕДВАРИТЕЛЬНЫЙ РЕЙТИНГ" : "РЕЙТИНГ ГОТОВНОСТИ"}
+        {assessment
+          ? "ФИНАЛЬНАЯ ОЦЕНКА ЗАДАЧИ"
+          : preview
+            ? "ПРЕДВАРИТЕЛЬНЫЙ РЕЙТИНГ"
+            : "ПРЕДВАРИТЕЛЬНЫЙ РЕЙТИНГ"}
       </div>
       <ScoreRing score={result.score} />
       <Badge readiness={result} />
       <p className="muted text-small score-description">
-        {preview
-          ? "Изменения станут публичными после подтверждения карточки."
-          : "Полнота задачи, а не оценка компании."}
+        {assessment
+          ? assessment.summary
+          : preview
+            ? "Изменения станут публичными после подтверждения карточки."
+            : "Оценка полноты карточки. Итоговый балл появится после анализа задачи."}
       </p>
       <div className="score-breakdown">
         {result.breakdown.map((row) => (
@@ -98,14 +137,18 @@ export function ScorePanel({
               <small>/{row.max}</small>
             </strong>
             <div className="score-row-track">
-              <i style={{ width: row.complete ? "100%" : "0%" }} />
+              <i
+                style={{
+                  width: `${Math.max(0, Math.min(100, (row.earned / row.max) * 100))}%`,
+                }}
+              />
             </div>
           </div>
         ))}
       </div>
       {result.missing.length > 0 ? (
         <div className="improve">
-          <h3>Что повысит рейтинг</h3>
+          <h3>{assessment ? "Что усилить в задаче" : "Что повысит рейтинг"}</h3>
           {nextActions.map((row) => (
             <div className="improvement-row" key={row.field}>
               <strong>+{row.max}</strong>
@@ -114,7 +157,8 @@ export function ScorePanel({
           ))}
           {nextLevel && (
             <p className="next-level">
-              До уровня «{nextLevel.label}» — {nextLevel.min - result.score} баллов
+              До уровня «{nextLevel.label}» — {nextLevel.min - result.score}{" "}
+              баллов
             </p>
           )}
         </div>
@@ -154,6 +198,7 @@ export function TaskCard({
   onPreview?: () => void;
   selected?: boolean;
 }) {
+  const readiness = reviewedReadiness(task.card, task.qualityAssessment);
   return (
     <article
       className={`task-card ${visual ? "visual-card" : ""} ${selected ? "is-selected" : ""}`}
@@ -216,10 +261,10 @@ export function TaskCard({
         <div className="task-card-bottom">
           <div className="mini-score">
             <strong>
-              {task.readiness.score}
+              {readiness.score}
               <small>/100</small>
             </strong>
-            <Badge readiness={task.readiness} />
+            <Badge readiness={readiness} />
           </div>
           {onPreview ? (
             <button

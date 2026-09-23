@@ -59,6 +59,29 @@ test("mobile navigation stays named and the catalog does not overflow", async ({
   ).toBeLessThanOrEqual(1280);
 });
 
+test("team creation is separate from the business profile", async ({
+  page,
+}) => {
+  await page.goto("/teams/new");
+  await page.getByLabel("Название команды").fill("E2E Qyran Squad");
+  await page.getByRole("checkbox", { name: "Торговля" }).check();
+  await page.getByRole("button", { name: "Тулпар" }).click();
+  await page
+    .getByRole("button", { name: "Создать команду", exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/team$/);
+  await expect(page.locator(".page-heading")).toContainText("E2E Qyran Squad");
+  await page.getByLabel("Открыть профиль", { exact: true }).click();
+  await expect(page.getByLabel("Демопрофиль")).toHaveValue(
+    /^team-[0-9a-f-]{36}$/u,
+  );
+  await page.getByLabel("Демопрофиль").selectOption("business");
+  await page.getByLabel("Открыть профиль", { exact: true }).click();
+  await expect(
+    page.getByRole("link", { name: "Мои задачи и отклики" }),
+  ).toBeVisible();
+});
+
 test("business and a team complete the whole workflow", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
@@ -114,6 +137,10 @@ test("business and a team complete the whole workflow", async ({ page }) => {
     "100",
   );
   await page.getByRole("button", { name: "Предпросмотр", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Анализ задачи и финальная оценка" })
+    .click();
+  await expect(page.getByText(/\/ 100 баллов/)).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Опубликовать задачу" }),
   ).toBeDisabled();
@@ -194,8 +221,10 @@ test("business and a team complete the whole workflow", async ({ page }) => {
     page.getByRole("heading", { name: "Первый результат подтверждён" }),
   ).toBeVisible();
   await page.goto("/teams");
-  await expect(page.locator(".team-card").first()).toContainText("Nomad Labs");
-  await expect(page.locator(".team-card").first().getByLabel("1 место")).toBeVisible();
+  await expect(page.locator(".team-card").first()).toContainText("Qyran Lab");
+  await expect(
+    page.locator(".team-card").first().getByLabel("1 место"),
+  ).toBeVisible();
   expect(errors).toEqual([]);
 });
 
@@ -242,7 +271,7 @@ test("all pages work and catalog filters do not restrict team access", async ({
     .getByRole("navigation")
     .getByRole("link", { name: "Команды", exact: true })
     .click();
-  await expect(page.locator(".team-card")).toHaveCount(5);
+  await expect(page.locator(".team-card")).toHaveCount(6);
   await page
     .getByRole("navigation", { name: "Основная навигация" })
     .getByRole("link", { name: "О платформе", exact: true })
