@@ -214,10 +214,10 @@ const taskVisualIcon: Record<string, LucideIcon> = {
   Финансы: Banknote,
   Экология: Leaf,
 };
-const demoBrandTransliteration: Record<string, string> = {
+const demoBrandSubtitle: Record<string, string> = {
   "task-coffee": "Zhibek Zholy",
-  "task-education": "Bilim Mektebi",
-  "task-delivery": "Tulpar Jetkizu",
+  "task-education": "Bilim School",
+  "task-delivery": "Тұлпар жеткізу",
 };
 export function TaskCard({
   task,
@@ -243,9 +243,9 @@ export function TaskCard({
           <span>{task.card.topic}</span>
           <span className="visual-brand">
             <span className="visual-word">{task.company}</span>
-            {demoBrandTransliteration[task.id] && (
+            {demoBrandSubtitle[task.id] && (
               <small className="visual-transliteration">
-                {demoBrandTransliteration[task.id]}
+                {demoBrandSubtitle[task.id]}
               </small>
             )}
           </span>

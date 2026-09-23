@@ -49,10 +49,10 @@ const coffee: Card = {
   skills: ["Python", "Аналитика", "React"],
 };
 export const seedTasks: { id: string; company: string; card: Card }[] = [
-  { id: "task-coffee", company: "Жібек жолы", card: coffee },
+  { id: "task-coffee", company: "Жібек жолы Coffee", card: coffee },
   {
     id: "task-education",
-    company: "Білім мектебі",
+    company: "Школа Bilim",
     card: {
       ...coffee,
       title: "Соберите персональную практику для студентов",
@@ -74,7 +74,7 @@ export const seedTasks: { id: string; company: string; card: Card }[] = [
   },
   {
     id: "task-delivery",
-    company: "Тұлпар жеткізу",
+    company: "Tulpar Delivery",
     card: {
       ...coffee,
       title: "Упростите планирование курьерских маршрутов",
