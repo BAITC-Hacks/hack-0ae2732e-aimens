@@ -5,6 +5,7 @@ import { ArrowUpRight, Check, Circle } from "lucide-react";
 import { useDemo } from "@/components/demo-provider";
 import { DataGate, Empty } from "@/components/ui";
 import { ProposalCard } from "@/components/proposals";
+import { TeamIcon } from "@/components/team-icon";
 
 export default function TeamPage() {
   const { data, actor, setActor } = useDemo();
@@ -72,7 +73,9 @@ export default function TeamPage() {
                 key={team.id}
                 onClick={() => setActor(team.id)}
               >
-                <div className="team-avatar">{team.initials}</div>
+                <div className="team-avatar">
+                  <TeamIcon iconKey={team.iconKey} />
+                </div>
                 <h2>{team.name}</h2>
                 <p>{team.tagline}</p>
                 <span className="text-link">

@@ -2,23 +2,27 @@ import { test, expect, type Page } from "@playwright/test";
 import type { Snapshot } from "../../src/domain/task";
 
 async function switchProfile(page: Page, actor: string) {
-  const select = page.getByLabel("Демопрофиль");
-  if (!(await select.isVisible()))
+  if (!(await page.getByRole("button", { name: "Бизнес", exact: true }).isVisible()))
     await page.getByLabel("Открыть профиль").click();
-  await select.selectOption(actor);
-  await expect(select).toHaveValue(actor);
-  if (await select.isVisible())
-    await page.getByLabel("Открыть профиль").click();
+  if (actor === "business") {
+    await page.getByRole("button", { name: "Бизнес", exact: true }).click();
+  } else {
+    await page.getByRole("button", { name: "Команда", exact: true }).click();
+    const select = page.getByLabel("Команда в профиле");
+    await select.selectOption(actor);
+    await expect(select).toHaveValue(actor);
+  }
+  await page.getByLabel("Открыть профиль").click();
 }
 
 async function openWorkspace(page: Page, name: string) {
-  if (!(await page.getByLabel("Демопрофиль").isVisible()))
+  if (!(await page.getByRole("button", { name: "Бизнес", exact: true }).isVisible()))
     await page.getByLabel("Открыть профиль").click();
   await page
     .locator(".profile-menu")
     .getByRole("link", { name, exact: true })
     .click();
-  if (await page.getByLabel("Демопрофиль").isVisible())
+  if (await page.getByRole("button", { name: "Бизнес", exact: true }).isVisible())
     await page.getByLabel("Открыть профиль").click();
 }
 
@@ -57,6 +61,38 @@ test("mobile navigation stays named and the catalog does not overflow", async ({
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth),
   ).toBeLessThanOrEqual(1280);
+});
+
+test("team creation is separate from the business profile", async ({
+  page,
+}) => {
+  await page.goto("/teams/new");
+  await page.getByLabel("Название команды").fill("E2E Qyran Squad");
+  await page.getByRole("checkbox", { name: "Торговля" }).check();
+  await page.getByRole("button", { name: "Тулпар" }).click();
+  await page
+    .getByRole("button", { name: "Создать команду", exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/team$/);
+  await expect(page.locator(".page-heading")).toContainText("E2E Qyran Squad");
+  await page.getByLabel("Открыть профиль", { exact: true }).click();
+  await expect(page.getByRole("button", { name: "Команда", exact: true }))
+    .toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByLabel("Команда в профиле")).toHaveValue(
+    /^team-[0-9a-f-]{36}$/u,
+  );
+  await page.getByRole("button", { name: "Бизнес", exact: true }).click();
+  await expect(page.getByLabel("Команда в профиле")).toHaveCount(0);
+  await page.getByRole("button", { name: "Команда", exact: true }).click();
+  await expect(page.getByLabel("Команда в профиле")).toHaveValue(
+    /^team-[0-9a-f-]{36}$/u,
+  );
+  await page.getByRole("button", { name: "Бизнес", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Бизнес", exact: true }))
+    .toHaveAttribute("aria-pressed", "true");
+  await expect(
+    page.getByRole("link", { name: "Мои задачи и отклики" }),
+  ).toBeVisible();
 });
 
 test("business and a team complete the whole workflow", async ({ page }) => {
@@ -114,6 +150,10 @@ test("business and a team complete the whole workflow", async ({ page }) => {
     "100",
   );
   await page.getByRole("button", { name: "Предпросмотр", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Анализ задачи" })
+    .click();
+  await expect(page.getByText(/\/ 100 баллов/)).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Опубликовать задачу" }),
   ).toBeDisabled();
@@ -194,8 +234,10 @@ test("business and a team complete the whole workflow", async ({ page }) => {
     page.getByRole("heading", { name: "Первый результат подтверждён" }),
   ).toBeVisible();
   await page.goto("/teams");
-  await expect(page.locator(".team-card").first()).toContainText("Nomad Labs");
-  await expect(page.locator(".team-card").first().getByLabel("1 место")).toBeVisible();
+  await expect(page.locator(".team-card").first()).toContainText("Qyran Lab");
+  await expect(
+    page.locator(".team-card").first().getByLabel("1 место"),
+  ).toBeVisible();
   expect(errors).toEqual([]);
 });
 
@@ -204,11 +246,11 @@ test("all pages work and catalog filters do not restrict team access", async ({
 }) => {
   await page.goto("/catalog");
   await expect(page.locator(".task-card").first()).toBeVisible();
-  await page.getByLabel("Поиск задач", { exact: true }).fill("Forma Studio");
+  await page.getByLabel("Поиск задач", { exact: true }).fill("Ornek Studio");
   await page.getByLabel("Поиск задач", { exact: true }).press("Enter");
   await expect
     .poll(() => new URL(page.url()).searchParams.get("q"))
-    .toBe("Forma Studio");
+    .toBe("Ornek Studio");
   await page.getByRole("button", { name: /^Маркетинг/ }).click();
   await expect(
     page.getByRole("button", { name: /^Маркетинг/ }),
@@ -229,7 +271,7 @@ test("all pages work and catalog filters do not restrict team access", async ({
   ).toBeVisible();
   await page.reload();
   await page.getByLabel("Открыть профиль").click();
-  await expect(page.getByLabel("Демопрофиль")).toHaveValue("team-5");
+  await expect(page.getByLabel("Команда в профиле")).toHaveValue("team-5");
   await page.getByLabel("Открыть профиль").click();
   await expect(
     page.getByRole("heading", { name: "Предложите своё решение" }),
@@ -242,7 +284,7 @@ test("all pages work and catalog filters do not restrict team access", async ({
     .getByRole("navigation")
     .getByRole("link", { name: "Команды", exact: true })
     .click();
-  await expect(page.locator(".team-card")).toHaveCount(5);
+  await expect(page.locator(".team-card")).toHaveCount(6);
   await page
     .getByRole("navigation", { name: "Основная навигация" })
     .getByRole("link", { name: "О платформе", exact: true })

@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { Store } from "@/server/store";
-import { emptyCard } from "@/domain/task";
+import {
+  cardSchema,
+  computeReadiness,
+  emptyCard,
+  QualityAssessment,
+} from "@/domain/task";
+import { issueReviewTicket } from "@/server/review-tickets";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -13,6 +19,24 @@ function fresh() {
   return store;
 }
 afterEach(() => stores.splice(0).forEach((store) => store.close()));
+
+function reviewToken(card: unknown, rawDescription: string) {
+  const normalized = cardSchema.parse(card);
+  const readiness = computeReadiness(normalized);
+  const assessment: QualityAssessment = {
+    score: readiness.score,
+    summary: "Проверка тестовой задачи завершена",
+    mode: "local",
+    dimensions: readiness.breakdown.map((row) => ({
+      field: row.field,
+      label: row.label,
+      max: row.max,
+      score: row.earned,
+      reason: row.tip,
+    })),
+  };
+  return issueReviewTicket(rawDescription.trim(), normalized, assessment);
+}
 
 describe("demo workflow", () => {
   it("restores legacy metadata only for unchanged seed cards", () => {
@@ -79,6 +103,10 @@ describe("demo workflow", () => {
       rawDescription: "Исходное описание",
       confirmed: true,
       publish: true,
+      reviewToken: reviewToken(
+        { ...emptyCard, title: "Сохранённая задача" },
+        "Исходное описание",
+      ),
     }).taskId!;
     const proposalId = first.act("team-2", {
       type: "propose",
@@ -122,6 +150,7 @@ describe("demo workflow", () => {
         rawDescription: "",
         confirmed: false,
         publish: true,
+        reviewToken: reviewToken(card, ""),
       }),
     ).toThrow();
     expect(store.snapshot("team-3").tasks[0].readiness.score).toBe(100);
@@ -132,6 +161,7 @@ describe("demo workflow", () => {
       rawDescription: "",
       confirmed: true,
       publish: true,
+      reviewToken: reviewToken(card, ""),
     });
     expect(
       store.snapshot("team-3").tasks.find((task) => task.id === original.id)
@@ -144,6 +174,7 @@ describe("demo workflow", () => {
       rawDescription: "",
       confirmed: true,
       publish: true,
+      reviewToken: reviewToken(original.card, ""),
     }).taskId!;
     const otherId = store.act("business", {
       type: "save-task",
@@ -151,6 +182,7 @@ describe("demo workflow", () => {
       rawDescription: "",
       confirmed: true,
       publish: true,
+      reviewToken: reviewToken(original.card, ""),
     }).taskId!;
     const tasks = store
       .snapshot("team-3")
@@ -205,6 +237,10 @@ describe("demo workflow", () => {
       rawDescription: "",
       confirmed: true,
       publish: true,
+      reviewToken: reviewToken(
+        { ...emptyCard, title: "Новая задача", topic: "Торговля" },
+        "",
+      ),
     });
     expect(
       store.snapshot("team-1").tasks.find((t) => t.id === taskId)?.readiness
@@ -277,6 +313,46 @@ describe("demo workflow", () => {
         .title,
     ).toBe("Моя правка");
     expect(store.snapshot("business").tasks).toHaveLength(10);
+  });
+  it("does not change a published card through an unreviewed draft save", () => {
+    const store = fresh();
+    const before = store
+      .snapshot("team-1")
+      .tasks.find((task) => task.id === "task-coffee")!;
+    expect(() =>
+      store.act("business", {
+        type: "save-task",
+        id: before.id,
+        card: { ...before.card, title: "Изменённый без анализа заголовок" },
+        rawDescription: "Новое описание карточки",
+        confirmed: true,
+        publish: false,
+      }),
+    ).toThrow();
+    const after = store
+      .snapshot("team-1")
+      .tasks.find((task) => task.id === before.id)!;
+    expect(after.card).toEqual(before.card);
+    expect(after.qualityAssessment).toEqual(before.qualityAssessment);
+  });
+  it("creates a team independently of the active business profile", () => {
+    const store = fresh();
+    const result = store.act("business", {
+      type: "create-team",
+      name: "Qyran Lab",
+      interests: ["IT и данные", "Торговля"],
+      iconKey: "eagle",
+    });
+    const team = store
+      .snapshot(result.teamId!)
+      .teams.find((item) => item.id === result.teamId);
+    expect(team).toMatchObject({
+      name: "Qyran Lab",
+      interests: ["IT и данные", "Торговля"],
+      iconKey: "eagle",
+      isCustom: true,
+      points: 0,
+    });
   });
   it("selects multiple teams and awards progress only once", () => {
     const store = fresh();

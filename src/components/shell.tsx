@@ -11,12 +11,24 @@ import {
   Plus,
 } from "lucide-react";
 import { useDemo } from "./demo-provider";
+import { useLocale } from "./locale-provider";
 import { useEffect, useRef, type ReactNode } from "react";
 
 export function Shell({ children }: { children: ReactNode }) {
   const path = usePathname();
+  const { locale, setLocale } = useLocale();
+  const languageLabel = locale === "kk" ? "Интерфейс тілі" : locale === "en" ? "Interface language" : "Язык интерфейса";
   const menu = useRef<HTMLDetailsElement>(null);
-  const { actor, setActor, data, busy, error, notice, clearNotice } = useDemo();
+  const {
+    actor,
+    lastTeamActor,
+    setActor,
+    data,
+    busy,
+    error,
+    notice,
+    clearNotice,
+  } = useDemo();
   useEffect(() => {
     const closeOutside = (event: PointerEvent) => {
       if (menu.current && !menu.current.contains(event.target as Node))
@@ -39,6 +51,7 @@ export function Shell({ children }: { children: ReactNode }) {
     actor === "business"
       ? "Бизнес"
       : (data?.teams.find((t) => t.id === actor)?.name ?? "Команда");
+  const teamMode = actor !== "business";
   const links = [
     ["/", "Главная"],
     ["/catalog", "Каталог задач"],
@@ -77,6 +90,18 @@ export function Shell({ children }: { children: ReactNode }) {
             ))}
           </nav>
           <div className="topbar-right">
+            <label className="language-control" data-no-translate>
+              <span className="sr-only">{languageLabel}</span>
+              <select
+                aria-label={languageLabel}
+                value={locale}
+                onChange={(event) => setLocale(event.target.value as "ru" | "kk" | "en")}
+              >
+                <option value="ru">РУС</option>
+                <option value="kk">ҚАЗ</option>
+                <option value="en">ENG</option>
+              </select>
+            </label>
             <Link
               href="/catalog#search"
               className="icon-button header-search"
@@ -97,25 +122,70 @@ export function Shell({ children }: { children: ReactNode }) {
               </summary>
               <div className="profile-dropdown">
                 <p className="eyebrow">ДЕМО-РЕЖИМ</p>
-                <label className="field">
-                  <span>Роль и команда</span>
-                  <select
-                    aria-label="Демопрофиль"
-                    value={actor}
-                    onChange={(e) => {
-                      setActor(e.target.value);
+                <fieldset className="profile-role-switch" disabled={busy}>
+                  <legend>Активная сторона</legend>
+                  <div role="group" aria-label="Выберите сторону">
+                    <button
+                      type="button"
+                      aria-pressed={!teamMode}
+                      className={!teamMode ? "selected" : ""}
+                      onClick={() => setActor("business")}
+                    >
+                      Бизнес
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={teamMode}
+                      className={teamMode ? "selected" : ""}
+                      disabled={!teamMode && !data?.teams.length}
+                      onClick={() => {
+                        if (!teamMode && data?.teams.length) {
+                          const rememberedTeam = data.teams.find(
+                            (team) => team.id === lastTeamActor,
+                          );
+                          setActor(rememberedTeam?.id ?? data.teams[0].id);
+                        }
+                      }}
+                    >
+                      Команда
+                    </button>
+                  </div>
+                </fieldset>
+                {teamMode && (
+                  <label className="field profile-team-select">
+                    <span>Команда в профиле</span>
+                    <select
+                      aria-label="Команда в профиле"
+                      value={actor}
+                      onChange={(e) => setActor(e.target.value)}
+                      disabled={busy}
+                    >
+                      {data?.teams.map((t) => (
+                        <option value={t.id} key={t.id}>
+                          {t.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                <div className="profile-create-team">
+                  <div>
+                    <strong>Создать отдельную команду</strong>
+                    <span className="text-small muted">
+                      Профиль бизнеса останется доступен в переключателе выше.
+                    </span>
+                  </div>
+                  <Link
+                    className="text-link"
+                    href="/teams/new"
+                    aria-label="Перейти к созданию команды"
+                    onClick={() => {
                       if (menu.current) menu.current.open = false;
                     }}
-                    disabled={busy}
                   >
-                    <option value="business">Бизнес</option>
-                    {data?.teams.map((t) => (
-                      <option value={t.id} key={t.id}>
-                        {t.name} · студент
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                    Создать свою команду <ArrowRight size={16} />
+                  </Link>
+                </div>
                 <Link
                   className="profile-workspace"
                   onClick={() => {
@@ -129,7 +199,8 @@ export function Shell({ children }: { children: ReactNode }) {
                   <ArrowRight size={16} />
                 </Link>
                 <p className="text-small muted">
-                  Переключайте роли, чтобы пройти весь сценарий без регистрации.
+                  Бизнес и студенческая команда — две стороны платформы. Команды
+                  создаются отдельно и выбираются внутри стороны «Команда».
                 </p>
               </div>
             </details>

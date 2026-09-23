@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { accessLabels, emptyCard, workFormatLabels } from "@/domain/task";
 import { useDemo } from "@/components/demo-provider";
+import { useLocale } from "@/components/locale-provider";
 import { DataGate, Empty, Badge, ScorePanel } from "@/components/ui";
 import { ProposalCard, ProposalForm } from "@/components/proposals";
 import { ProposalComparison } from "@/components/proposal-comparison";
@@ -23,6 +24,7 @@ export default function TaskPage({
 }) {
   const { id } = use(params);
   const { data, actor, setActor } = useDemo();
+  const { locale } = useLocale();
   const task = data?.tasks.find((task) => task.id === id);
   const proposals =
     data?.proposals.filter((proposal) => proposal.taskId === id) ?? [];
@@ -69,7 +71,7 @@ export default function TaskPage({
                 <time dateTime={task.publishedAt ?? task.createdAt}>
                   {new Date(
                     task.publishedAt ?? task.createdAt,
-                  ).toLocaleDateString("ru-RU", {
+                  ).toLocaleDateString({ ru: "ru-RU", kk: "kk-KZ", en: "en-US" }[locale], {
                     day: "numeric",
                     month: "long",
                     year: "numeric",
@@ -169,7 +171,10 @@ export default function TaskPage({
               )}
             </div>
             <aside className="sticky-aside stack">
-              <ScorePanel card={task.confirmedAt ? task.card : emptyCard} />
+              <ScorePanel
+                card={task.confirmedAt ? task.card : emptyCard}
+                assessment={task.qualityAssessment}
+              />
               <section className="panel">
                 <h2>{task.company}</h2>
                 <p className="muted text-small">{task.card.topic}</p>
@@ -200,7 +205,7 @@ export default function TaskPage({
                     style={{ marginTop: 17, width: "100%" }}
                     onClick={() => setActor("team-1")}
                   >
-                    Стать Nomad Labs
+                    Стать Qyran Lab
                     <ArrowUpRight size={15} />
                   </button>
                 </div>

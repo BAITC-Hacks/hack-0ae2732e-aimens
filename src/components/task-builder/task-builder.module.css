@@ -290,3 +290,22 @@
     transition: none;
   }
 }
+.topicSuggestion {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  margin-top: -8px;
+  margin-bottom: 18px;
+}
+.topicSuggestion small { color: var(--color-text-secondary); line-height: 1.5; }
+.qualityResult {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface-muted, #f6faf8);
+}
+.qualityResult > strong { font-size: 22px; }
+.qualityResult ul { display: grid; gap: 9px; padding: 0; list-style: none; }
+.qualityResult li { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; }
+.qualityResult li small, .qualityResult > small { grid-column: 1 / -1; color: var(--color-text-secondary); }

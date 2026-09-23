@@ -11,13 +11,17 @@ function browserErrors(page: Page) {
 }
 
 async function switchProfile(page: Page, actor: string) {
-  const select = page.getByLabel("Демопрофиль");
-  if (!(await select.isVisible()))
+  if (!(await page.getByRole("button", { name: "Бизнес", exact: true }).isVisible()))
     await page.getByLabel("Открыть профиль").click();
-  await select.selectOption(actor);
-  await expect(select).toHaveValue(actor);
-  if (await select.isVisible())
-    await page.getByLabel("Открыть профиль").click();
+  if (actor === "business") {
+    await page.getByRole("button", { name: "Бизнес", exact: true }).click();
+  } else {
+    await page.getByRole("button", { name: "Команда", exact: true }).click();
+    const select = page.getByLabel("Команда в профиле");
+    await select.selectOption(actor);
+    await expect(select).toHaveValue(actor);
+  }
+  await page.getByLabel("Открыть профиль").click();
 }
 
 async function catalogIds(page: Page) {
@@ -35,7 +39,7 @@ test("home search, categories and primary navigation lead to working pages", asy
   const errors = browserErrors(page);
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toContainText(
-    "Реальные задачи.",
+    "Бизнесу — решение",
   );
   await expect(page.locator(".featured-grid .task-card")).toHaveCount(3);
   await page.getByLabel("Поиск задач на главной").fill("Bilim");
@@ -98,11 +102,11 @@ test("catalog query, topic, readiness, format and sort update actual results", a
   const numbers = scores.map((score) => Number.parseInt(score, 10));
   expect(numbers).toEqual([...numbers].sort((a, b) => b - a));
 
-  await page.getByLabel("Поиск задач", { exact: true }).fill("Forma Studio");
+  await page.getByLabel("Поиск задач", { exact: true }).fill("Ornek Studio");
   await page.getByLabel("Поиск задач", { exact: true }).press("Enter");
   await expect
     .poll(() => new URL(page.url()).searchParams.get("q"))
-    .toBe("Forma Studio");
+    .toBe("Ornek Studio");
   await expect(results.locator(".task-card")).toHaveCount(1);
   await expect(
     results.locator('[data-task-id="task-marketing"]'),
@@ -271,7 +275,7 @@ test("preview opens the selected task and recommendations keep the whole catalog
     results.locator('[data-task-id="task-marketing"]'),
   ).toBeVisible();
   await switchProfile(page, "team-5");
-  await expect(recommended).toContainText("Jas AI");
+  await expect(recommended).toContainText("Arqa Tech");
   await expect.poll(() => catalogIds(page)).toEqual(allTaskIds);
   await results
     .locator('[data-task-id="task-marketing"]')

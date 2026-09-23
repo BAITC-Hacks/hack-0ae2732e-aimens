@@ -1,14 +1,28 @@
 "use client";
+import { useLocale } from "./locale-provider";
 import Link from "next/link";
 import Image from "next/image";
 import {
   ArrowUpRight,
+  BookOpen,
+  Banknote,
+  BriefcaseBusiness,
   Check,
   Circle,
   Clock3,
+  Factory,
+  HeartPulse,
+  Leaf,
+  MapPinned,
+  Megaphone,
   MessageSquare,
   ArrowRight,
+  ShoppingBag,
+  Truck,
   Eye,
+  Wheat,
+  Database,
+  type LucideIcon,
 } from "lucide-react";
 import {
   Readiness,
@@ -16,6 +30,8 @@ import {
   Card,
   computeReadiness,
   levels,
+  readinessLevel,
+  QualityAssessment,
   workFormatLabels,
 } from "@/domain/task";
 import { useDemo } from "./demo-provider";
@@ -64,14 +80,45 @@ export function Badge({ readiness }: { readiness: Readiness }) {
     </span>
   );
 }
+function reviewedReadiness(card: Card, assessment?: QualityAssessment | null) {
+  const provisional = computeReadiness(card);
+  if (!assessment) return provisional;
+
+  const breakdown = provisional.breakdown.map((row) => {
+    const dimension = assessment.dimensions.find(
+      (candidate) => candidate.field === row.field,
+    );
+    if (!dimension) return row;
+    return {
+      ...row,
+      label: dimension.label || row.label,
+      max: dimension.max,
+      earned: dimension.score,
+      complete: dimension.score >= dimension.max,
+      tip: dimension.reason || row.tip,
+    };
+  });
+  return {
+    score: assessment.score,
+    level: readinessLevel(assessment.score),
+    breakdown,
+    missing: breakdown.filter((row) => !row.complete),
+  };
+}
 export function ScorePanel({
   card,
+  assessment,
+  provisional,
   preview = false,
 }: {
   card: Card;
+  assessment?: QualityAssessment | null;
+  provisional?: Readiness | null;
   preview?: boolean;
 }) {
-  const result = computeReadiness(card);
+  const result = assessment
+    ? reviewedReadiness(card, assessment)
+    : (provisional ?? computeReadiness(card));
   const nextLevel = levels.find((level) => level.min > result.score);
   const nextActions = [...result.missing]
     .sort((left, right) => right.max - left.max)
@@ -79,14 +126,20 @@ export function ScorePanel({
   return (
     <section className="panel score-panel">
       <div className="eyebrow">
-        {preview ? "ПРЕДВАРИТЕЛЬНЫЙ РЕЙТИНГ" : "РЕЙТИНГ ГОТОВНОСТИ"}
+        {assessment
+          ? "ФИНАЛЬНАЯ ОЦЕНКА ЗАДАЧИ"
+          : preview
+            ? "ПРЕДВАРИТЕЛЬНЫЙ РЕЙТИНГ"
+            : "ПРЕДВАРИТЕЛЬНЫЙ РЕЙТИНГ"}
       </div>
       <ScoreRing score={result.score} />
       <Badge readiness={result} />
       <p className="muted text-small score-description">
-        {preview
-          ? "Изменения станут публичными после подтверждения карточки."
-          : "Полнота задачи, а не оценка компании."}
+        {assessment
+          ? assessment.summary
+          : preview
+            ? "Изменения станут публичными после подтверждения карточки."
+            : "Оценка полноты карточки. Итоговый балл появится после анализа задачи."}
       </p>
       <div className="score-breakdown">
         {result.breakdown.map((row) => (
@@ -98,14 +151,18 @@ export function ScorePanel({
               <small>/{row.max}</small>
             </strong>
             <div className="score-row-track">
-              <i style={{ width: row.complete ? "100%" : "0%" }} />
+              <i
+                style={{
+                  width: `${Math.max(0, Math.min(100, (row.earned / row.max) * 100))}%`,
+                }}
+              />
             </div>
           </div>
         ))}
       </div>
       {result.missing.length > 0 ? (
         <div className="improve">
-          <h3>Что повысит рейтинг</h3>
+          <h3>{assessment ? "Что усилить в задаче" : "Что повысит рейтинг"}</h3>
           {nextActions.map((row) => (
             <div className="improvement-row" key={row.field}>
               <strong>+{row.max}</strong>
@@ -114,7 +171,8 @@ export function ScorePanel({
           ))}
           {nextLevel && (
             <p className="next-level">
-              До уровня «{nextLevel.label}» — {nextLevel.min - result.score} баллов
+              До уровня «{nextLevel.label}» — {nextLevel.min - result.score}{" "}
+              баллов
             </p>
           )}
         </div>
@@ -143,6 +201,25 @@ export function categoryAsset(topic: string) {
     )[topic] ?? "briefcase"
   );
 }
+const taskVisualIcon: Record<string, LucideIcon> = {
+  Торговля: ShoppingBag,
+  Образование: BookOpen,
+  Логистика: Truck,
+  Сервисы: BriefcaseBusiness,
+  Маркетинг: Megaphone,
+  "Сельское хозяйство": Wheat,
+  Туризм: MapPinned,
+  "IT и данные": Database,
+  Производство: Factory,
+  Здоровье: HeartPulse,
+  Финансы: Banknote,
+  Экология: Leaf,
+};
+const demoBrandSubtitle: Record<string, string> = {
+  "task-coffee": "Zhibek Zholy",
+  "task-education": "Bilim School",
+  "task-delivery": "Тұлпар жеткізу",
+};
 export function TaskCard({
   task,
   visual = false,
@@ -154,6 +231,9 @@ export function TaskCard({
   onPreview?: () => void;
   selected?: boolean;
 }) {
+  const { locale, t } = useLocale();
+  const readiness = reviewedReadiness(task.card, task.qualityAssessment);
+  const VisualIcon = taskVisualIcon[task.card.topic] ?? BriefcaseBusiness;
   return (
     <article
       className={`task-card ${visual ? "visual-card" : ""} ${selected ? "is-selected" : ""}`}
@@ -161,14 +241,16 @@ export function TaskCard({
     >
       {visual && (
         <div className={`task-visual topic-${task.card.topic}`}>
-          <Image
-            src={`/assets/svg/${categoryAsset(task.card.topic)}.svg`}
-            alt=""
-            width={68}
-            height={68}
-          />
+          <VisualIcon size={58} strokeWidth={1.8} aria-hidden="true" />
           <span>{task.card.topic}</span>
-          <span className="visual-word">{task.company}</span>
+          <span className="visual-brand">
+            <span className="visual-word">{task.company}</span>
+            {demoBrandSubtitle[task.id] && (
+              <small className="visual-transliteration">
+                {demoBrandSubtitle[task.id]}
+              </small>
+            )}
+          </span>
         </div>
       )}
       <div className="task-card-content">
@@ -184,7 +266,7 @@ export function TaskCard({
             <span>
               {task.card.topic} ·{" "}
               {task.publishedAt
-                ? new Date(task.publishedAt).toLocaleDateString("ru-RU", {
+                ? new Date(task.publishedAt).toLocaleDateString({ ru: "ru-RU", kk: "kk-KZ", en: "en-US" }[locale], {
                     day: "numeric",
                     month: "short",
                   })
@@ -210,22 +292,22 @@ export function TaskCard({
           <span>{workFormatLabels[task.card.workFormat ?? "unspecified"]}</span>
           <span className="subtle">
             <MessageSquare size={14} />
-            {task.proposalCount} откликов
+            {task.proposalCount} {locale === "en" ? (task.proposalCount === 1 ? "response" : "responses") : locale === "kk" ? "жауап" : "откликов"}
           </span>
         </div>
         <div className="task-card-bottom">
           <div className="mini-score">
             <strong>
-              {task.readiness.score}
+              {readiness.score}
               <small>/100</small>
             </strong>
-            <Badge readiness={task.readiness} />
+            <Badge readiness={readiness} />
           </div>
           {onPreview ? (
             <button
               className="text-link preview-button"
               onClick={onPreview}
-              aria-label={`Предпросмотр: ${task.card.title}`}
+              aria-label={`${t("Предпросмотр")}: ${t(task.card.title)}`}
               aria-pressed={selected}
             >
               <Eye size={16} />
@@ -235,7 +317,7 @@ export function TaskCard({
             <Link
               href={`/tasks/${task.id}`}
               className="icon-button"
-              aria-label={`Открыть задачу: ${task.card.title}`}
+              aria-label={`${t("Открыть задачу")}: ${t(task.card.title)}`}
             >
               <ArrowUpRight size={19} />
             </Link>

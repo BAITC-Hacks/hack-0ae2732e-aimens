@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DemoProvider } from "@/components/demo-provider";
 import { Shell } from "@/components/shell";
 import { FavoritesProvider } from "@/components/favorites";
+import { LocaleProvider } from "@/components/locale-provider";
 import "@fontsource/dm-sans/400.css";
 import "@fontsource/dm-sans/500.css";
 import "@fontsource/dm-sans/600.css";
@@ -19,11 +20,13 @@ export default function RootLayout({
   return (
     <html lang="ru" data-scroll-behavior="smooth">
       <body>
-        <DemoProvider>
-          <FavoritesProvider>
-            <Shell>{children}</Shell>
-          </FavoritesProvider>
-        </DemoProvider>
+        <LocaleProvider>
+          <DemoProvider>
+            <FavoritesProvider>
+              <Shell>{children}</Shell>
+            </FavoritesProvider>
+          </DemoProvider>
+        </LocaleProvider>
       </body>
     </html>
   );

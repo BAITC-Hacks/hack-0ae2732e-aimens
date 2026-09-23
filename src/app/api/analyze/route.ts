@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { cardSchema } from "@/domain/task";
+import { cardSchema, computeReadiness } from "@/domain/task";
 import { analyze, consumeAnalyzeRateLimit } from "@/server/ai";
 import { readLimitedBody } from "@/server/http";
 export const runtime = "nodejs";
@@ -41,7 +41,17 @@ export async function POST(request: Request) {
         card: cardSchema,
       })
       .parse(JSON.parse(text));
-    return Response.json(await analyze(input.description, input.card));
+    const analysis = await analyze(input.description, input.card);
+    // The initial estimate should use what the business already wrote, even
+    // before the AI has copied that text into the editable card fields.
+    const preliminaryCard = {
+      ...input.card,
+      context: input.card.context || input.description,
+    };
+    return Response.json({
+      ...analysis,
+      preliminaryReadiness: computeReadiness(preliminaryCard),
+    });
   } catch {
     return Response.json(
       { error: "Проверьте описание и поля карточки" },
