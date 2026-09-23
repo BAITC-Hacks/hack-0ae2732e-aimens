@@ -13,15 +13,23 @@ export default function TeamsPage() {
     (left, right) =>
       right.points - left.points || left.name.localeCompare(right.name, "ru"),
   );
+  const teamRanks = new Map<string, number>();
+  rankedTeams.forEach((team, index) => {
+    if (index === 0 || team.points !== rankedTeams[index - 1]?.points) {
+      teamRanks.set(team.id, index + 1);
+    } else {
+      teamRanks.set(team.id, teamRanks.get(rankedTeams[index - 1]!.id)!);
+    }
+  });
   return (
     <DataGate>
       <div className="page-heading">
         <div>
           <div className="eyebrow">КОМАНДЫ SANALINK</div>
-          <h1>Команды, готовые пробовать</h1>
+          <h1>Команды, которые решают реальные задачи</h1>
           <p>
-            Баллы показывают подтверждённые бизнесом первые результаты. При
-            равенстве команды делят место.
+            Найдите команду по её направлениям и откройте профиль, чтобы
+            посмотреть отклики и подтверждённые результаты.
           </p>
         </div>
         <Link className="button primary" href="/teams/new">
@@ -30,22 +38,22 @@ export default function TeamsPage() {
       </div>
       <div className="team-grid">
         {rankedTeams.map((team) => (
-          <article className="team-card" key={team.id}>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <article
+            className={`team-card ${actor === team.id ? "active-team-card" : ""}`}
+            key={team.id}
+          >
+            <div className="team-card-topline">
               <div className="team-avatar" title={team.iconKey ?? "Шанырак"}>
                 <TeamIcon iconKey={team.iconKey} size={28} />
               </div>
               <span
                 className="team-rank"
-                aria-label={`${rankedTeams.findIndex((candidate) => candidate.points === team.points) + 1} место`}
+                aria-label={`${teamRanks.get(team.id)} место`}
               >
-                #
-                {rankedTeams.findIndex(
-                  (candidate) => candidate.points === team.points,
-                ) + 1}
+                #{teamRanks.get(team.id)}
               </span>
               {actor === team.id && (
-                <span className="text-green text-small">Ваш профиль</span>
+                <span className="team-current-badge">Активный профиль</span>
               )}
             </div>
             <h2>{team.name}</h2>
@@ -67,7 +75,11 @@ export default function TeamsPage() {
                 <span key={skill}>{skill}</span>
               ))}
             </div>
-            <p className="text-small">Интересы: {team.interests.join(" · ")}</p>
+            <div className="team-interest-tags" aria-label="Направления команды">
+              {team.interests.map((interest) => (
+                <span key={interest}>{interest}</span>
+              ))}
+            </div>
             {!!team.technologies?.length && (
               <p className="team-technologies text-small muted">
                 Технологии: {team.technologies.join(" · ")}
@@ -85,7 +97,8 @@ export default function TeamsPage() {
                   router.push("/team");
                 }}
               >
-                Выбрать профиль <ArrowUpRight size={15} />
+                {actor === team.id ? "Открыть профиль" : "Выбрать команду"}{" "}
+                <ArrowUpRight size={15} />
               </button>
             </div>
           </article>

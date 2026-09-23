@@ -52,6 +52,13 @@ describe("readiness", () => {
       expect(computeReadiness({ ...emptyCard, context: value }).score).toBe(0);
     },
   );
+  it.each([
+    "купить купить купить купить",
+    "jhgdskjgdsk kjdsglkjs",
+    "задача задача задача задача",
+  ])("rejects repeated or keyboard-mash answers: %s", (value) => {
+    expect(computeReadiness({ ...emptyCard, context: value }).score).toBe(0);
+  });
   it("credits actual data even when it mentions a missing subset", () => {
     expect(
       computeReadiness({
@@ -107,6 +114,24 @@ describe("readiness", () => {
     expect(computeReadiness({ ...full, context: "", contact: "" }).score).toBe(
       85,
     );
+  });
+  it("does not award the same filler copied into multiple fields", () => {
+    const filler = "Нужно улучшить бизнес процессы";
+    const card = {
+      ...emptyCard,
+      context: filler,
+      need: filler,
+      users: filler,
+      expectedResult: filler,
+      successMetric: filler,
+      successTarget: "10%",
+      constraints: filler,
+      dataDescription: filler,
+      dataAccess: "provided" as const,
+      contact: "demo@example.com",
+      interaction: filler,
+    };
+    expect(computeReadiness(card).score).toBeLessThan(100);
   });
   it.each([
     [0, "draft"],

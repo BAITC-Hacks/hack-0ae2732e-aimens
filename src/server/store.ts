@@ -144,7 +144,8 @@ export class Store {
         id: row.id!,
         card: readCard(row),
         rawDescription: row.raw_description!,
-        company: row.company!,
+        company:
+          seedTasks.find((seed) => seed.id === row.id)?.company ?? row.company!,
         createdAt: row.created_at!,
         confirmedAt: row.confirmed_at,
         publishedAt: row.published_at,

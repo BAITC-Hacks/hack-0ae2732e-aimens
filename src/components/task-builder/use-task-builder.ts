@@ -36,6 +36,7 @@ export function useTaskBuilder(task?: Task) {
   const [suggestingTopic, setSuggestingTopic] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const latestInput = useRef({ raw, card });
+  const topicRequest = useRef<string | null>(null);
   useEffect(() => {
     latestInput.current = { raw, card };
   }, [raw, card]);
@@ -59,6 +60,8 @@ export function useTaskBuilder(task?: Task) {
   };
   function setRaw(value: string) {
     setRawState(value);
+    setTopicSuggestion(null);
+    topicRequest.current = null;
     setPreliminaryReadiness(null);
     invalidateConfirmation();
   }
@@ -114,6 +117,8 @@ export function useTaskBuilder(task?: Task) {
       );
       return;
     }
+    if (topicRequest.current === raw) return;
+    topicRequest.current = raw;
     setSuggestingTopic(true);
     try {
       const response = await fetch("/api/suggest-topic", {
@@ -133,6 +138,7 @@ export function useTaskBuilder(task?: Task) {
         err instanceof Error ? err.message : "Не удалось определить тему",
       );
     } finally {
+      if (topicRequest.current === raw) topicRequest.current = null;
       setSuggestingTopic(false);
     }
   }
@@ -183,7 +189,7 @@ export function useTaskBuilder(task?: Task) {
     setError("");
     if (!validateSkills()) return;
     if (publish && (!qualityAssessment || !reviewToken)) {
-      setError("Сначала нажмите «Анализ задачи и финальная оценка».");
+      setError("Сначала нажмите «Анализ задачи». ");
       return;
     }
     if (publish && !confirmed) {

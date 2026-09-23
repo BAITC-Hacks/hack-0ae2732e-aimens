@@ -42,9 +42,15 @@ export async function POST(request: Request) {
       })
       .parse(JSON.parse(text));
     const analysis = await analyze(input.description, input.card);
+    // The initial estimate should use what the business already wrote, even
+    // before the AI has copied that text into the editable card fields.
+    const preliminaryCard = {
+      ...input.card,
+      context: input.card.context || input.description,
+    };
     return Response.json({
       ...analysis,
-      preliminaryReadiness: computeReadiness(input.card),
+      preliminaryReadiness: computeReadiness(preliminaryCard),
     });
   } catch {
     return Response.json(

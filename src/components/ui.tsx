@@ -3,12 +3,25 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   ArrowUpRight,
+  BookOpen,
+  Banknote,
+  BriefcaseBusiness,
   Check,
   Circle,
   Clock3,
+  Factory,
+  HeartPulse,
+  Leaf,
+  MapPinned,
+  Megaphone,
   MessageSquare,
   ArrowRight,
+  ShoppingBag,
+  Truck,
   Eye,
+  Wheat,
+  Database,
+  type LucideIcon,
 } from "lucide-react";
 import {
   Readiness,
@@ -187,6 +200,25 @@ export function categoryAsset(topic: string) {
     )[topic] ?? "briefcase"
   );
 }
+const taskVisualIcon: Record<string, LucideIcon> = {
+  Торговля: ShoppingBag,
+  Образование: BookOpen,
+  Логистика: Truck,
+  Сервисы: BriefcaseBusiness,
+  Маркетинг: Megaphone,
+  "Сельское хозяйство": Wheat,
+  Туризм: MapPinned,
+  "IT и данные": Database,
+  Производство: Factory,
+  Здоровье: HeartPulse,
+  Финансы: Banknote,
+  Экология: Leaf,
+};
+const demoBrandTransliteration: Record<string, string> = {
+  "task-coffee": "Zhibek Zholy",
+  "task-education": "Bilim Mektebi",
+  "task-delivery": "Tulpar Jetkizu",
+};
 export function TaskCard({
   task,
   visual = false,
@@ -199,6 +231,7 @@ export function TaskCard({
   selected?: boolean;
 }) {
   const readiness = reviewedReadiness(task.card, task.qualityAssessment);
+  const VisualIcon = taskVisualIcon[task.card.topic] ?? BriefcaseBusiness;
   return (
     <article
       className={`task-card ${visual ? "visual-card" : ""} ${selected ? "is-selected" : ""}`}
@@ -206,14 +239,16 @@ export function TaskCard({
     >
       {visual && (
         <div className={`task-visual topic-${task.card.topic}`}>
-          <Image
-            src={`/assets/svg/${categoryAsset(task.card.topic)}.svg`}
-            alt=""
-            width={68}
-            height={68}
-          />
+          <VisualIcon size={58} strokeWidth={1.8} aria-hidden="true" />
           <span>{task.card.topic}</span>
-          <span className="visual-word">{task.company}</span>
+          <span className="visual-brand">
+            <span className="visual-word">{task.company}</span>
+            {demoBrandTransliteration[task.id] && (
+              <small className="visual-transliteration">
+                {demoBrandTransliteration[task.id]}
+              </small>
+            )}
+          </span>
         </div>
       )}
       <div className="task-card-content">

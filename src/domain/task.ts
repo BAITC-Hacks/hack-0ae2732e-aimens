@@ -250,13 +250,31 @@ export function isUsefulAnswer(value: string, minWords = 2, minLength = 8) {
   const words = comparable.split(" ").filter((word) => word.length > 1);
   if (/(?:asdf|qwerty|lorem|ipsum|xxx|тесттест)/iu.test(comparable))
     return false;
-  if (words.length >= 2 && new Set(words).size < Math.min(minWords, 2))
+  const uniqueWords = new Set(words);
+  if (words.length >= 2 && uniqueWords.size < Math.min(minWords, 2))
+    return false;
+  if (words.length >= 3 && uniqueWords.size / words.length < 0.5)
+    return false;
+  // Reject keyboard mash while allowing short legitimate abbreviations (AI, KPI).
+  const letters = comparable.replace(/[^\p{L}]/gu, "");
+  const vowels = (letters.match(/[aeiouyаеёиоуыэюяәіңғүұқөһ]/giu) ?? []).length;
+  if (letters.length >= 8 && vowels / letters.length < 0.12)
     return false;
   return words.length >= minWords;
 }
 
 export function computeReadiness(card: Card) {
   const has = (key: FieldKey) => {
+    const currentText = normalizeComparableText(card[key]);
+    if (
+      currentText &&
+      fields.some(
+        (field) =>
+          field.key !== key &&
+          normalizeComparableText(card[field.key]) === currentText,
+      )
+    )
+      return false;
     if (key === "contact")
       return (
         /[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/u.test(card.contact) ||

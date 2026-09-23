@@ -38,6 +38,15 @@ export function DraftStep({
           value={raw}
           disabled={disabled}
           onChange={(event) => setRaw(event.target.value)}
+          onBlur={(event) => {
+            const nextTarget = event.relatedTarget as HTMLElement | null;
+            if (
+              !nextTarget?.closest("button") &&
+              raw.trim().length >= 8 &&
+              !topicSuggestion
+            )
+              suggestTopic();
+          }}
           placeholder="У нас сеть кофеен. Каждый вечер остаётся непроданная выпечка. Хотим понять, сколько готовить на завтра…"
         />
         <small className={styles.counter}>{raw.length} / 4000</small>

@@ -108,8 +108,8 @@ export function PublishStep({
           {reviewing
             ? "Анализируем задачу…"
             : qualityAssessment
-              ? "Повторить анализ"
-              : "Анализ задачи и финальная оценка"}
+              ? "Повторить анализ задачи"
+              : "Анализ задачи"}
         </button>
         {qualityAssessment && (
           <div className={styles.qualityResult} role="status">

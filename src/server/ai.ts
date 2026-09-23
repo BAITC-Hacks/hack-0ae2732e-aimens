@@ -353,15 +353,48 @@ function localQualityAssessment(
         : "Добавьте конкретные сведения, которые помогут команде спланировать работу",
     };
   });
-  const score = dimensions.reduce((sum, row) => sum + row.score, 0);
   const hasDescription = isUsefulAnswer(rawDescription, 4, 30);
-  return {
-    score: hasDescription ? score : Math.min(score, 20),
+  return enforceAssessmentEvidence(rawDescription, card, {
+    score: dimensions.reduce((sum, row) => sum + row.score, 0),
     summary: hasDescription
       ? "Локальная проверка содержания завершена. Уточните отмеченные пробелы перед публикацией."
       : "Исходное описание пока слишком короткое или общее, поэтому оценка ограничена. Добавьте ситуацию, задачу и желаемый результат.",
     dimensions,
     mode: "local",
+  });
+}
+
+/** Keep model scores inside the same deterministic evidence gates as the UI readiness rubric. */
+function enforceAssessmentEvidence(
+  rawDescription: string,
+  card: Card,
+  assessment: QualityAssessment,
+): QualityAssessment {
+  const readiness = new Map(
+    computeReadiness(card).breakdown.map((row) => [row.field, row.complete]),
+  );
+  let dimensions = assessment.dimensions.map((item) => ({
+    ...item,
+    score: readiness.get(item.field) ? Math.min(item.score, item.max) : 0,
+  }));
+  const hasDescription = isUsefulAnswer(rawDescription, 4, 30);
+  if (!hasDescription) {
+    // Avoid a contradictory display where the total is capped but row scores still add up higher.
+    let remaining = 20;
+    dimensions = dimensions.map((item) => {
+      const score = Math.min(item.score, remaining);
+      remaining -= score;
+      return { ...item, score };
+    });
+  }
+  const score = dimensions.reduce((sum, row) => sum + row.score, 0);
+  return {
+    ...assessment,
+    score,
+    dimensions,
+    summary: hasDescription
+      ? assessment.summary
+      : "Исходное описание пока недостаточно содержательное, поэтому оценка ограничена. Добавьте конкретную ситуацию, задачу и желаемый результат.",
   };
 }
 
@@ -438,12 +471,12 @@ export async function assessTaskQuality(
         reason: result.reason,
       };
     });
-    return {
+    return enforceAssessmentEvidence(rawDescription, card, {
       score: dimensions.reduce((sum, row) => sum + row.score, 0),
       summary: parsed.summary,
       dimensions,
       mode: "openai",
-    };
+    });
   } catch {
     return localQualityAssessment(card, rawDescription);
   }

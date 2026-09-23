@@ -60,11 +60,11 @@ export default function CreateTeamPage() {
       </Link>
       <div className="page-heading" style={{ marginTop: 24 }}>
         <div>
-          <div className="eyebrow">ПРОФИЛЬ СТУДЕНЧЕСКОЙ КОМАНДЫ</div>
-          <h1>Создайте свою команду</h1>
+          <div className="eyebrow">ОТДЕЛЬНО ОТ ПРОФИЛЯ БИЗНЕСА</div>
+          <h1>Создайте профиль команды</h1>
           <p>
-            Укажите название, выберите направления и символ. После создания
-            откроется профиль команды.
+            Название, направления и символ помогут бизнесу узнать вашу команду.
+            После создания вы сможете переключаться между бизнесом и командой.
           </p>
         </div>
       </div>
@@ -82,13 +82,13 @@ export default function CreateTeamPage() {
             placeholder="Например, Qyran Lab"
           />
           <small className="muted">
-            Название можно будет показать бизнесу в каталоге команд.
+            Выберите короткое имя, которое будет видно в каталоге и откликах.
           </small>
         </label>
 
         <fieldset className="team-choice-group">
           <legend>
-            Направления команды <small>выберите от 1 до 4</small>
+            Чем занимается команда <small>выберите от 1 до 4 направлений</small>
           </legend>
           <div className="team-topic-options">
             {topics.map((topic) => (
@@ -112,7 +112,7 @@ export default function CreateTeamPage() {
         </fieldset>
 
         <fieldset className="team-choice-group">
-          <legend>Символ команды</legend>
+          <legend>Значок команды <small>10 символов с мотивами Казахстана</small></legend>
           <div className="team-icon-options">
             {teamIconOptions.map((option) => (
               <button
