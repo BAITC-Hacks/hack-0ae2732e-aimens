@@ -125,6 +125,59 @@ describe("AI assistance", () => {
     expect(result.questions).toHaveLength(3);
     expect(new Set(result.questions.map(({ field }) => field)).size).toBe(3);
   });
+  it("prioritizes gaps over answered model questions and keeps useful wording", () => {
+    const card = {
+      ...emptyCard,
+      context: "Каждый вечер остаётся выпечка",
+      need: "Сократить списания",
+      users: "Пекари",
+    };
+    const usefulQuestion = {
+      field: "expectedResult" as const,
+      question: "Какой результат пекарь должен получить утром перед выпечкой?",
+    };
+    const result = validateAnalysis(
+      {
+        extractions: [],
+        questions: [
+          { field: "need", question: "Что именно вы хотите изменить?" },
+          { field: "users", question: "Кто будет пользоваться решением?" },
+          { field: "context", question: "Как сейчас устроен процесс?" },
+          usefulQuestion,
+        ],
+      },
+      "Кофейня списывает выпечку",
+      card,
+    );
+
+    expect(result.questions).toHaveLength(4);
+    expect(result.questions).toContainEqual(usefulQuestion);
+    expect(result.questions.every(({ field }) => !card[field])).toBe(true);
+  });
+  it("uses the description when repairing duplicate model questions", () => {
+    const result = validateAnalysis(
+      {
+        extractions: [],
+        questions: Array.from({ length: 3 }, () => ({
+          field: "need",
+          question: "Что именно вы хотите изменить?",
+        })),
+      },
+      "Есть CSV заказов. Нужно сократить время планирования с 40 до 10 минут.",
+      emptyCard,
+    );
+
+    expect(result.questions).toHaveLength(3);
+    expect(new Set(result.questions.map(({ field }) => field)).size).toBe(3);
+    expect(
+      result.questions.find(({ field }) => field === "dataDescription")?.question,
+    ).toMatch(/Как команда получит доступ/);
+    expect(
+      result.questions.some(({ field }) =>
+        ["need", "successMetric", "successTarget"].includes(field),
+      ),
+    ).toBe(false);
+  });
 });
 
 describe("AI endpoint rate limit", () => {

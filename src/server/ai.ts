@@ -206,7 +206,6 @@ function completeQuestions(
     usedQuestions.add(normalized);
   };
 
-  proposed.forEach(add);
   const mentioned = descriptionSignals(description);
   // Explicit card answers take precedence over older wording in the description.
   if (
@@ -222,7 +221,12 @@ function completeQuestions(
       return true;
     return fieldNeedsReadinessInfo(card, field) && !mentioned.has(field);
   });
-  [...missing, ...questionPriority.filter((field) => !missing.includes(field))]
+  // Keep useful model wording, but address every gap before asking for refinements.
+  proposed.filter(({ field }) => missing.includes(field)).forEach(add);
+  missing.map((field) => localQuestion(field, card, mentioned)).forEach(add);
+  proposed.filter(({ field }) => !missing.includes(field)).forEach(add);
+  questionPriority
+    .filter((field) => !missing.includes(field))
     .map((field) => localQuestion(field, card, mentioned))
     .forEach(add);
 
@@ -289,6 +293,7 @@ export function validateAnalysis(
       parsed.questions,
       { ...card, ...suggestions },
       parsed.questions.length,
+      description,
     ),
   };
 }
