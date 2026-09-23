@@ -4,7 +4,7 @@
 }
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: 120px;
+  scroll-padding-top: var(--shell-offset, 160px);
 }
 body {
   margin: 0;
@@ -68,9 +68,13 @@ h3,
 h4 {
   line-height: 1.3;
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 svg {
   flex-shrink: 0;
+}
+.lucide {
+  stroke-width: 1.7;
 }
 img {
   max-width: 100%;
@@ -221,7 +225,7 @@ img {
 }
 .topbar-inner {
   max-width: 1408px;
-  min-height: 82px;
+  min-height: 72px;
   padding: 0 32px;
   margin: auto;
   display: flex;
@@ -299,6 +303,67 @@ img {
   line-height: 1.3;
   font-weight: 600;
   max-width: 120px;
+  overflow-wrap: anywhere;
+}
+.demo-toolbar {
+  background: var(--color-background);
+  border-top: 1px solid var(--color-border);
+}
+.demo-toolbar-inner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  max-width: 1408px;
+  min-height: 60px;
+  margin: auto;
+  padding: 8px 32px;
+  font-size: 12px;
+}
+.demo-label,
+.demo-context {
+  color: var(--color-text-secondary);
+}
+.demo-context {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.role-switch {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xs);
+  background: var(--color-surface);
+  flex-shrink: 0;
+}
+.role-switch button {
+  min-height: 36px;
+  padding: 6px 16px;
+  border-radius: 3px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+.role-switch button[aria-pressed="true"] {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
+}
+.role-switch button:disabled {
+  opacity: 0.65;
+}
+.workspace-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-height: 44px;
+  margin-left: auto;
+  color: var(--color-primary-hover);
+  font-size: 13px;
+  font-weight: 600;
+}
+.workspace-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 .profile-name small {
   display: block;
@@ -704,6 +769,7 @@ img {
 }
 .task-card.is-selected {
   border-color: var(--color-primary);
+  box-shadow: inset 3px 0 0 var(--color-primary);
 }
 .task-card-content {
   padding: 20px 24px;
@@ -750,6 +816,7 @@ img {
 .company-info strong {
   display: block;
   font-size: 14px;
+  overflow-wrap: anywhere;
 }
 .company-info span {
   color: var(--color-text-secondary);
@@ -911,6 +978,33 @@ img {
   gap: 16px;
   margin-bottom: 24px;
 }
+.active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+.active-filters button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  max-width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xs);
+  color: var(--color-primary-hover);
+  background: var(--color-primary-soft);
+  font-size: 12px;
+  text-align: left;
+}
+.active-filters span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.active-filters button:hover {
+  border-color: var(--color-primary);
+}
 .search-box {
   min-height: 50px;
   border: 1px solid var(--color-border);
@@ -1046,8 +1140,11 @@ legend {
 }
 .catalog-preview {
   position: sticky;
-  top: 106px;
+  top: var(--shell-offset, 160px);
   min-width: 0;
+}
+.catalog-preview:focus-visible {
+  border-radius: var(--radius-sm);
 }
 .preview-inner {
   padding: 20px;
@@ -1170,7 +1267,7 @@ legend {
   margin-bottom: 32px;
 }
 .page-heading h1 {
-  font-size: 40px;
+  font-size: clamp(30px, 3vw, 40px);
   letter-spacing: -1.3px;
   margin: 8px 0 12px;
 }
@@ -1212,7 +1309,7 @@ legend {
 }
 .sticky-aside {
   position: sticky;
-  top: 106px;
+  top: var(--shell-offset, 160px);
 }
 .section-title {
   display: flex;
@@ -1258,6 +1355,13 @@ legend {
 .field :is(input, textarea, select):focus {
   border-color: var(--color-primary);
 }
+.field :is(input, textarea, select):hover:not(:disabled):not(:focus) {
+  border-color: var(--color-line-strong);
+}
+.field :is(input, textarea, select):disabled {
+  background: var(--color-surface-soft);
+  cursor: wait;
+}
 .field input::placeholder,
 .field textarea::placeholder {
   color: var(--color-text-secondary);
@@ -1280,6 +1384,11 @@ legend {
   align-items: flex-start;
   font-size: 14px;
   cursor: pointer;
+  margin: 20px 0;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xs);
+  background: var(--color-surface);
 }
 .checkbox-label input {
   width: 18px;
@@ -1475,7 +1584,7 @@ legend {
   padding-top: 20px;
   border-top: 1px solid var(--color-border);
 }
-.detail-block h2 {
+.detail-block h3 {
   font-size: 16px;
   margin-bottom: 8px;
 }
@@ -1830,6 +1939,16 @@ legend {
   color: inherit;
   flex-shrink: 0;
 }
+.toast .toast-retry {
+  width: auto;
+  height: auto;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid currentColor;
+  border-radius: var(--radius-xs);
+  font-weight: 600;
+  flex-shrink: 1;
+}
 .empty {
   padding: 40px 24px;
   background: white;
@@ -1940,6 +2059,15 @@ legend {
   }
 }
 @media (max-width: 1000px) {
+  :root {
+    --shell-offset: 192px;
+  }
+  .demo-label {
+    display: none;
+  }
+  .demo-toolbar-inner {
+    padding-inline: 24px;
+  }
   .topbar-inner {
     flex-wrap: wrap;
     gap: 0;
@@ -1967,7 +2095,7 @@ legend {
     grid-template-columns: minmax(0, 1fr) 285px;
   }
   .sticky-aside {
-    top: 138px;
+    top: var(--shell-offset);
   }
   .home-hero {
     padding: 24px;
@@ -2022,6 +2150,19 @@ legend {
   }
 }
 @media (max-width: 760px) {
+  .demo-toolbar-inner {
+    padding-inline: 16px;
+    gap: 8px;
+  }
+  .demo-context {
+    display: none;
+  }
+  .workspace-link {
+    font-size: 12px;
+  }
+  .role-switch button {
+    padding-inline: 10px;
+  }
   .main-content {
     padding: 24px 16px 40px;
   }
@@ -2254,6 +2395,9 @@ legend {
   }
 }
 @media (max-width: 420px) {
+  :root {
+    --shell-offset: 234px;
+  }
   .hero-copy h1 {
     font-size: 34px;
   }
@@ -2434,9 +2578,15 @@ legend {
   font-size: 12px;
 }
 @media (max-width: 1000px) {
-  .team-journey ol { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .team-journey ol {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 @media (max-width: 600px) {
-  .team-journey ol { grid-template-columns: 1fr; }
-  .team-journey .section-title { display: grid; }
+  .team-journey ol {
+    grid-template-columns: 1fr;
+  }
+  .team-journey .section-title {
+    display: grid;
+  }
 }

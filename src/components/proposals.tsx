@@ -10,7 +10,7 @@ import {
   Award,
   Info,
 } from "lucide-react";
-import { Proposal, Task } from "@/domain/task";
+import { Proposal, Task, Progress } from "@/domain/task";
 import { useDemo } from "./demo-provider";
 import { Status } from "./ui";
 
@@ -134,10 +134,18 @@ export function ProposalForm({ task }: { task: Task }) {
     </section>
   );
 }
-function ProgressForm({ taskId }: { taskId: string }) {
+function ProgressForm({
+  taskId,
+  progress,
+  onClose,
+}: {
+  taskId: string;
+  progress?: Progress;
+  onClose?: () => void;
+}) {
   const { act, busy } = useDemo();
-  const [description, setDescription] = useState("");
-  const [link, setLink] = useState("");
+  const [description, setDescription] = useState(progress?.description ?? "");
+  const [link, setLink] = useState(progress?.link ?? "");
   return (
     <form
       className="result-box"
@@ -146,12 +154,15 @@ function ProgressForm({ taskId }: { taskId: string }) {
         try {
           await act(
             { type: "submit-progress", taskId, description, link },
-            "Первый результат отправлен на подтверждение",
+            progress
+              ? "Изменения результата сохранены. Ожидаем подтверждения бизнеса."
+              : "Первый результат отправлен на подтверждение",
           );
+          onClose?.();
         } catch {}
       }}
     >
-      <h4>Первый результат</h4>
+      <h4>{progress ? "Исправление результата" : "Первый результат"}</h4>
       <p style={{ marginBottom: 14 }}>
         Покажите, что получилось. После подтверждения бизнесом команда получит
         10 баллов.
@@ -177,9 +188,21 @@ function ProgressForm({ taskId }: { taskId: string }) {
           placeholder="https://…"
         />
       </label>
-      <button className="button primary small" disabled={busy}>
-        Отправить результат
-      </button>
+      <div className="form-actions">
+        <button className="button primary small" disabled={busy}>
+          {progress ? "Сохранить изменения" : "Отправить результат"}
+        </button>
+        {onClose && (
+          <button
+            type="button"
+            className="button secondary small"
+            disabled={busy}
+            onClick={onClose}
+          >
+            Отмена
+          </button>
+        )}
+      </div>
     </form>
   );
 }
@@ -191,6 +214,7 @@ export function ProposalCard({
   showTask?: boolean;
 }) {
   const { data, actor, act, busy } = useDemo();
+  const [editingResult, setEditingResult] = useState(false);
   const team = data?.teams.find((team) => team.id === proposal.teamId);
   const task = data?.tasks.find((task) => task.id === proposal.taskId);
   const progress = data?.progress.find(
@@ -293,8 +317,36 @@ export function ProposalCard({
               </div>
             )
           )}
+          {!progress.confirmedAt && actor === proposal.teamId && (
+            <div className="form-actions">
+              <button
+                type="button"
+                className="button secondary small"
+                aria-expanded={editingResult}
+                aria-controls={`result-editor-${proposal.id}`}
+                onClick={() => setEditingResult((editing) => !editing)}
+              >
+                {editingResult
+                  ? "Закрыть редактирование"
+                  : "Исправить результат"}
+              </button>
+            </div>
+          )}
         </div>
       )}
+      {proposal.status === "selected" &&
+        progress &&
+        !progress.confirmedAt &&
+        actor === proposal.teamId &&
+        editingResult && (
+          <div id={`result-editor-${proposal.id}`}>
+            <ProgressForm
+              taskId={proposal.taskId}
+              progress={progress}
+              onClose={() => setEditingResult(false)}
+            />
+          </div>
+        )}
       {proposal.status === "selected" &&
         !progress &&
         !business &&

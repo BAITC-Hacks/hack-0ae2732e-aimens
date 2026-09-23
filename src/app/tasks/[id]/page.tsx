@@ -22,18 +22,36 @@ export default function TaskPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const { data, actor, setActor } = useDemo();
+  const { data, actor, setActor, refreshFailed, reload } = useDemo();
   const task = data?.tasks.find((task) => task.id === id);
   const proposals =
     data?.proposals.filter((proposal) => proposal.taskId === id) ?? [];
   return (
     <DataGate>
       {!task ? (
-        <Empty
-          title="Задача не найдена"
-          text="Неопубликованные задачи доступны в режиме бизнеса."
-          href="/catalog"
-        />
+        refreshFailed ? (
+          <section className="empty">
+            <h1>Нужно обновить данные</h1>
+            <p>
+              Последние изменения ещё не загружены. Повторите загрузку карточки;
+              заново публиковать задачу не требуется.
+            </p>
+            <button
+              className="button secondary"
+              onClick={() => {
+                void reload().catch(() => {});
+              }}
+            >
+              Загрузить карточку
+            </button>
+          </section>
+        ) : (
+          <Empty
+            title="Задача не найдена"
+            text="Неопубликованные задачи доступны в режиме бизнеса."
+            href="/catalog"
+          />
+        )
       ) : (
         <>
           <Link href="/catalog" className="back-link">
@@ -115,7 +133,7 @@ export default function TaskPage({
                   ["Формат взаимодействия", task.card.interaction],
                 ].map(([title, text]) => (
                   <div className="detail-block" key={title}>
-                    <h2>{title}</h2>
+                    <h3>{title}</h3>
                     <p className={!text ? "missing" : ""}>
                       {text || "Пока не уточнено — обсудите с бизнесом"}
                     </p>

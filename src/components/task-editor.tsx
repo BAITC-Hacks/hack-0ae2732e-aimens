@@ -33,6 +33,7 @@ export function TaskEditor({ task }: { task?: Task }) {
   const builder = useTaskBuilder(task);
   const {
     step,
+    reachedStep,
     card,
     raw,
     busy,
@@ -96,7 +97,10 @@ export function TaskEditor({ task }: { task?: Task }) {
               type="button"
               aria-current={step === index ? "step" : undefined}
               disabled={
-                busy || analyzing || index > step || (index === 1 && !analysis)
+                busy ||
+                analyzing ||
+                index > reachedStep ||
+                (index === 1 && !analysis)
               }
               onClick={() => goToStep(index as BuilderStep)}
             >

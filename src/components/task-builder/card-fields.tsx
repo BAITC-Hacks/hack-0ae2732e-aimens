@@ -37,6 +37,7 @@ export function CardFields({
         <label className="field">
           <span>Название задачи *</span>
           <input
+            required
             value={card.title}
             maxLength={160}
             onChange={(event) => update("title", event.target.value)}
@@ -47,6 +48,7 @@ export function CardFields({
           <label className="field">
             <span>Тема *</span>
             <select
+              required
               value={card.topic}
               onChange={(event) => update("topic", event.target.value)}
             >

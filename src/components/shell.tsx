@@ -2,21 +2,29 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import {
-  ArrowRight,
-  Search,
-  ChevronDown,
-  UserRound,
-  X,
-  Plus,
-} from "lucide-react";
+import { ArrowRight, Search, ChevronDown, UserRound, X } from "lucide-react";
 import { useDemo } from "./demo-provider";
 import { useEffect, useRef, type ReactNode } from "react";
 
 export function Shell({ children }: { children: ReactNode }) {
   const path = usePathname();
   const menu = useRef<HTMLDetailsElement>(null);
-  const { actor, setActor, data, busy, error, notice, clearNotice } = useDemo();
+  const lastTeam = useRef("team-1");
+  const {
+    actor,
+    setActor,
+    data,
+    busy,
+    loading,
+    error,
+    notice,
+    clearNotice,
+    refreshFailed,
+    reload,
+  } = useDemo();
+  useEffect(() => {
+    if (actor !== "business") lastTeam.current = actor;
+  }, [actor]);
   useEffect(() => {
     const closeOutside = (event: PointerEvent) => {
       if (menu.current && !menu.current.contains(event.target as Node))
@@ -135,6 +143,41 @@ export function Shell({ children }: { children: ReactNode }) {
             </details>
           </div>
         </div>
+        <div className="demo-toolbar">
+          <div className="demo-toolbar-inner">
+            <span className="demo-label">Демо без регистрации</span>
+            <div className="role-switch" role="group" aria-label="Роль в демо">
+              <button
+                type="button"
+                aria-pressed={actor === "business"}
+                disabled={busy || loading}
+                onClick={() => setActor("business")}
+              >
+                Бизнес
+              </button>
+              <button
+                type="button"
+                aria-pressed={actor !== "business"}
+                disabled={busy || loading}
+                onClick={() => setActor(lastTeam.current)}
+              >
+                Студент
+              </button>
+            </div>
+            <span className="demo-context">
+              {actor === "business"
+                ? "Публикуйте задачи и выбирайте команды"
+                : profile}
+            </span>
+            <Link
+              className="workspace-link"
+              href={actor === "business" ? "/business" : "/team"}
+            >
+              {actor === "business" ? "Кабинет бизнеса" : "Мои отклики"}
+              <ArrowRight size={15} aria-hidden="true" />
+            </Link>
+          </div>
+        </div>
       </header>
       <div className="main-shell">
         <main id="main" className="main-content">
@@ -189,19 +232,21 @@ export function Shell({ children }: { children: ReactNode }) {
           role={error ? "alert" : "status"}
         >
           <span>{error || notice}</span>
+          {refreshFailed && (
+            <button
+              className="toast-retry"
+              onClick={() => {
+                void reload().catch(() => {});
+              }}
+            >
+              Обновить данные
+            </button>
+          )}
           <button onClick={clearNotice} aria-label="Закрыть сообщение">
             <X size={18} />
           </button>
         </div>
       )}
     </div>
-  );
-}
-export function NewTaskButton() {
-  return (
-    <Link className="button primary" href="/tasks/new">
-      <Plus size={18} />
-      Разместить задачу
-    </Link>
   );
 }

@@ -1,6 +1,94 @@
 import { expect, test } from "@playwright/test";
 import { emptyCard } from "../../src/domain/task";
 
+test("team can correct its first result until business confirms it", async ({
+  page,
+}) => {
+  const act = async (actor: string, data: object) => {
+    const response = await page.request.post("/api/demo", {
+      headers: { "x-demo-actor": actor },
+      data,
+    });
+    expect(response.ok()).toBeTruthy();
+    return response.json();
+  };
+  const snapshot = async () =>
+    (
+      await page.request.get("/api/demo", {
+        headers: { "x-demo-actor": "business" },
+      })
+    ).json();
+  const initialPoints = (await snapshot()).teams.find(
+    (team: { id: string }) => team.id === "team-3",
+  ).points;
+  const { taskId } = await act("business", {
+    type: "save-task",
+    card: { ...emptyCard, title: "E2E: исправление результата" },
+    rawDescription: "Первый результат можно уточнить до подтверждения",
+    confirmed: true,
+    publish: true,
+  });
+  const { proposalId } = await act("team-3", {
+    type: "propose",
+    taskId,
+    idea: "Прототип",
+    plan: "Собрать и проверить",
+    duration: "Неделя",
+    link: "https://example.com/prototype",
+  });
+  await act("business", { type: "decide", proposalId, status: "selected" });
+  const { progressId } = await act("team-3", {
+    type: "submit-progress",
+    taskId,
+    description: "Первая версия",
+    link: "https://example.com/old-result",
+  });
+  await page.goto(`/tasks/${taskId}`);
+  await page.getByLabel("Открыть профиль").click();
+  await page.getByLabel("Демопрофиль").selectOption("team-3");
+  await page.getByLabel("Открыть профиль").click();
+  const proposal = page.locator(`#proposal-${proposalId}`);
+  await proposal.getByRole("button", { name: "Исправить результат" }).click();
+  await expect(proposal.getByLabel("Что сделано")).toHaveValue("Первая версия");
+  await expect(proposal.getByLabel("Ссылка на результат")).toHaveValue(
+    "https://example.com/old-result",
+  );
+  await proposal
+    .getByLabel("Что сделано")
+    .fill("Исправленная проверенная версия");
+  await proposal
+    .getByLabel("Ссылка на результат")
+    .fill("https://example.com/correct-result");
+  await proposal.getByRole("button", { name: "Сохранить изменения" }).click();
+  await expect(proposal).toContainText("Исправленная проверенная версия");
+  await expect(
+    proposal.getByRole("link", { name: "Посмотреть результат" }),
+  ).toHaveAttribute("href", "https://example.com/correct-result");
+  const pending = await snapshot();
+  expect(
+    pending.progress.filter((row: { taskId: string }) => row.taskId === taskId),
+  ).toEqual([
+    expect.objectContaining({
+      id: progressId,
+      description: "Исправленная проверенная версия",
+      confirmedAt: null,
+    }),
+  ]);
+  expect(
+    pending.teams.find((team: { id: string }) => team.id === "team-3").points,
+  ).toBe(initialPoints);
+  await act("business", { type: "confirm-progress", progressId });
+  await page.reload();
+  await expect(proposal).toContainText("Первый результат подтверждён");
+  await expect(
+    proposal.getByRole("button", { name: "Исправить результат" }),
+  ).toHaveCount(0);
+  const confirmed = await snapshot();
+  expect(
+    confirmed.teams.find((team: { id: string }) => team.id === "team-3").points,
+  ).toBe(initialPoints + 10);
+});
+
 test("one result row and one reward for two selected proposals from the same team", async ({
   page,
 }) => {

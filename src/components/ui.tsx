@@ -134,9 +134,9 @@ export function categoryAsset(topic: string) {
   return (
     (
       {
-        Торговля: "category-finance",
+        Торговля: "category-commerce",
         Образование: "category-education",
-        Логистика: "category-eco",
+        Логистика: "category-logistics",
         Сервисы: "category-it",
         Маркетинг: "category-marketing",
       } as Record<string, string>
@@ -227,6 +227,7 @@ export function TaskCard({
               onClick={onPreview}
               aria-label={`Предпросмотр: ${task.card.title}`}
               aria-pressed={selected}
+              aria-controls="catalog-preview"
             >
               <Eye size={16} />
               <span>Обзор</span>

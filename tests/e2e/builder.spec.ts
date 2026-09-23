@@ -1,5 +1,88 @@
 import { expect, test } from "@playwright/test";
 
+test("published task remains acknowledged when its snapshot refresh fails", async ({
+  page,
+}) => {
+  await page.goto("/tasks/new");
+  await page
+    .getByLabel("Описание задачи", { exact: true })
+    .fill("Хотим сократить списания выпечки в нашей кофейне.");
+  await page.getByRole("button", { name: "Помочь с описанием" }).click();
+  await page.getByRole("button", { name: "Перейти к карточке" }).click();
+  await page
+    .getByLabel("Название задачи")
+    .fill("E2E: публикация при сбое обновления");
+  await page.getByRole("button", { name: "Предпросмотр", exact: true }).click();
+  await page.getByRole("checkbox", { name: /Я проверил/ }).check();
+  await page
+    .getByRole("button", { name: "Подтвердить карточку", exact: true })
+    .click();
+  let writes = 0;
+  await page.route("**/api/demo", async (route) => {
+    if (route.request().method() === "POST") {
+      writes += 1;
+      return route.continue();
+    }
+    return route.fulfill({ status: 503, json: { error: "Снимок недоступен" } });
+  });
+  await page.getByRole("button", { name: "Опубликовать задачу" }).click();
+  await expect(page).toHaveURL(/\/tasks\/[a-f0-9-]{36}$/);
+  await expect(
+    page.getByRole("heading", { name: "Нужно обновить данные" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Задача не найдена" }),
+  ).toHaveCount(0);
+  await page.unroute("**/api/demo");
+  await page
+    .getByRole("button", { name: "Обновить данные", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "E2E: публикация при сбое обновления" }),
+  ).toBeVisible();
+  expect(writes).toBe(1);
+});
+
+test("visited builder steps preserve answers without another analysis", async ({
+  page,
+}) => {
+  let analyses = 0;
+  page.on("request", (request) => {
+    if (request.url().endsWith("/api/analyze")) analyses += 1;
+  });
+  await page.goto("/tasks/new");
+  await page
+    .getByLabel("Описание задачи", { exact: true })
+    .fill("Кофейня хочет сократить списание непроданной выпечки вечером.");
+  await page.getByRole("button", { name: "Помочь с описанием" }).click();
+  await page.getByRole("button", { name: "Перейти к карточке" }).click();
+  await page.getByLabel("Название задачи").fill("План выпечки на завтра");
+  await page.getByRole("button", { name: "Предпросмотр", exact: true }).click();
+  await page.getByRole("checkbox", { name: /Я проверил/ }).check();
+  await page
+    .getByRole("button", { name: "Подтвердить карточку", exact: true })
+    .click();
+  const steps = page.getByRole("list", { name: "Этапы создания задачи" });
+  await steps.getByRole("button", { name: /Черновик/ }).click();
+  await page
+    .getByLabel("Описание задачи", { exact: true })
+    .fill(
+      "Кофейня хочет сократить списание выпечки. Сейчас нет прогноза спроса.",
+    );
+  await steps.getByRole("button", { name: /Карточка/ }).click();
+  await expect(page.getByLabel("Название задачи")).toHaveValue(
+    "План выпечки на завтра",
+  );
+  await steps.getByRole("button", { name: /Публикация/ }).click();
+  await expect(
+    page.getByRole("checkbox", { name: /Я проверил/ }),
+  ).not.toBeChecked();
+  await expect(
+    page.getByRole("button", { name: "Опубликовать задачу", exact: true }),
+  ).toBeDisabled();
+  expect(analyses).toBe(1);
+});
+
 test("business edits and publishes a seeded draft hidden from teams", async ({
   page,
 }) => {

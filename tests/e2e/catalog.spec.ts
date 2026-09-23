@@ -29,6 +29,61 @@ async function catalogIds(page: Page) {
     );
 }
 
+test("visible role switch remembers the chosen team and opens its workspace", async ({
+  page,
+}) => {
+  await page.goto("/catalog");
+  await switchProfile(page, "team-4");
+  const roles = page.getByRole("group", { name: "Роль в демо" });
+  await roles.getByRole("button", { name: "Бизнес", exact: true }).click();
+  await expect(page.locator(".workspace-link")).toHaveAttribute(
+    "href",
+    "/business",
+  );
+  await roles.getByRole("button", { name: "Студент", exact: true }).click();
+  await expect(page.getByLabel("Демопрофиль")).toHaveValue("team-4");
+  await page.locator(".workspace-link").click();
+  await expect(page).toHaveURL(/\/team$/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Мои отклики",
+  );
+});
+
+test("active filter chips remove one condition while preserving the others", async ({
+  page,
+}) => {
+  await page.goto("/catalog?topic=Маркетинг&level=draft&format=remote");
+  const filters = page.getByRole("group", { name: "Активные фильтры" });
+  await filters
+    .getByRole("button", { name: "Убрать фильтр: Черновик" })
+    .click();
+  await expect(page.getByLabel("Уровень готовности")).toHaveValue("");
+  await expect(page.getByLabel("Формат работы")).toHaveValue("remote");
+  await expect(
+    page.getByRole("button", { name: /^Маркетинг/ }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(filters.getByRole("button")).toHaveCount(2);
+});
+
+test("narrow catalog preview receives focus and is brought into view", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 768, height: 900 });
+  await page.goto("/catalog");
+  const card = page.locator('[data-task-id="task-inventory"]');
+  await card.getByRole("button", { name: /^Предпросмотр:/ }).click();
+  const preview = page.getByRole("complementary", { name: "Быстрый просмотр" });
+  await expect(preview).toBeFocused();
+  await expect(
+    preview.getByRole("heading", {
+      name: "Объедините складские остатки в одном окне",
+    }),
+  ).toBeInViewport();
+  await expect(
+    preview.getByRole("link", { name: "Открыть задачу", exact: true }),
+  ).toHaveAttribute("href", "/tasks/task-inventory");
+});
+
 test("home search, categories and primary navigation lead to working pages", async ({
   page,
 }) => {

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -39,6 +39,7 @@ function CatalogContent() {
   const router = useRouter();
   const { ids } = useFavorites();
   const [selectedId, setSelectedId] = useState("");
+  const previewRef = useRef<HTMLElement>(null);
   const [query, setQuery] = useState(params.get("q") ?? "");
   const topic = params.get("topic") ?? "",
     level = params.get("level") ?? "",
@@ -56,6 +57,38 @@ function CatalogContent() {
   const team = data?.teams.find((t) => t.id === actor);
   const recommendations = recommendTasks(published, team, 2);
   const selected = tasks.find((t) => t.id === selectedId) ?? tasks[0];
+  const activeFilters = [
+    ...(query ? [{ key: "q", label: `Поиск: ${query}` }] : []),
+    ...(topic ? [{ key: "topic", label: topic }] : []),
+    ...(level
+      ? [
+          {
+            key: "level",
+            label: levels.find((item) => item.key === level)?.label ?? level,
+          },
+        ]
+      : []),
+    ...(format
+      ? [
+          {
+            key: "format",
+            label: workFormatLabels[format as WorkFormat] ?? format,
+          },
+        ]
+      : []),
+    ...(saved ? [{ key: "saved", label: "Избранное" }] : []),
+  ];
+  function showPreview(id: string) {
+    setSelectedId(id);
+    requestAnimationFrame(() => {
+      previewRef.current?.focus({ preventScroll: true });
+      if (window.matchMedia("(max-width: 1000px)").matches)
+        previewRef.current?.scrollIntoView({
+          block: "start",
+          behavior: "instant",
+        });
+    });
+  }
   function update(key: string, value: string) {
     const next = new URLSearchParams(params.toString());
     if (value) next.set(key, value);
@@ -70,8 +103,8 @@ function CatalogContent() {
     <DataGate>
       <div className="page-heading catalog-page-heading">
         <div>
-          <div className="eyebrow">НАЙДИТЕ СВОЮ СЛЕДУЮЩУЮ ЗАДАЧУ</div>
-          <h1>От интереса — к практике</h1>
+          <div className="eyebrow">ОТКРЫТЫЕ ВОЗМОЖНОСТИ ДЛЯ КОМАНД</div>
+          <h1>Каталог бизнес-задач</h1>
           <p>
             Реальные потребности бизнеса. Открытые возможности для каждой
             команды.
@@ -249,13 +282,35 @@ function CatalogContent() {
               </select>
             </label>
           </div>
+          {activeFilters.length > 0 && (
+            <div
+              className="active-filters"
+              role="group"
+              aria-label="Активные фильтры"
+            >
+              {activeFilters.map((filter) => (
+                <button
+                  type="button"
+                  key={filter.key}
+                  aria-label={`Убрать фильтр: ${filter.label}`}
+                  onClick={() => {
+                    if (filter.key === "q") setQuery("");
+                    update(filter.key, "");
+                  }}
+                >
+                  <span>{filter.label}</span>
+                  <X size={13} aria-hidden="true" />
+                </button>
+              ))}
+            </div>
+          )}
           <div className="task-list">
             {tasks.map((task) => (
               <TaskCard
                 key={task.id}
                 task={task}
                 selected={selected?.id === task.id}
-                onPreview={() => setSelectedId(task.id)}
+                onPreview={() => showPreview(task.id)}
               />
             ))}
             {!tasks.length && (
@@ -286,7 +341,13 @@ function CatalogContent() {
             )}
           </div>
         </section>
-        <aside className="catalog-preview" aria-label="Быстрый просмотр">
+        <aside
+          id="catalog-preview"
+          className="catalog-preview"
+          aria-label="Быстрый просмотр"
+          ref={previewRef}
+          tabIndex={-1}
+        >
           {selected ? (
             <div className="preview-inner">
               <div className="section-title">

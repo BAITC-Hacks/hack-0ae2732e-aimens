@@ -12,6 +12,7 @@ export function useTaskBuilder(task?: Task) {
   const [card, setCard] = useState<Card>(task?.card ?? { ...emptyCard });
   const [raw, setRawState] = useState(task?.rawDescription ?? "");
   const [step, setStep] = useState<BuilderStep>(task ? 2 : 0);
+  const [reachedStep, setReachedStep] = useState<BuilderStep>(task ? 2 : 0);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState("");
@@ -39,6 +40,7 @@ export function useTaskBuilder(task?: Task) {
   }
   function goToStep(next: BuilderStep) {
     setStep(next);
+    setReachedStep((current) => Math.max(current, next) as BuilderStep);
     setError("");
   }
   async function analyze() {
@@ -69,7 +71,7 @@ export function useTaskBuilder(task?: Task) {
         return next;
       });
       invalidateConfirmation();
-      setStep(1);
+      goToStep(1);
     } catch (err) {
       setError(
         err instanceof Error
@@ -139,6 +141,7 @@ export function useTaskBuilder(task?: Task) {
     card,
     raw,
     step,
+    reachedStep,
     analysis,
     analyzing,
     busy,

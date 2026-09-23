@@ -81,7 +81,7 @@ export function PublishStep({
           Рейтинг отражает полноту описания. Он помогает командам оценить задачу
           и не проверяет достоверность фактов.
         </p>
-        <label className="checkbox-row">
+        <label className="checkbox-label">
           <input
             type="checkbox"
             checked={acknowledged}
