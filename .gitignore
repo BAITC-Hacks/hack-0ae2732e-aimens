@@ -1,0 +1,33 @@
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+
+# JavaScript
+node_modules/
+dist/
+build/
+.next/
+
+# OS and editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Runtime and checks
+data/*.sqlite*
+data/*.db*
+test-results/
+playwright-report/
+*.tsbuildinfo
+.next-e2e/
+next-env.d.ts
