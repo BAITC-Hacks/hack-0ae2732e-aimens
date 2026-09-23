@@ -1,16 +1,28 @@
 :root {
   /* Primitive tokens */
-  --color-ink-950: #050c2a;
+  --color-ink-950: #16332f;
   --color-ink-800: #263247;
-  --color-ink-600: #48566a;
-  --color-blue-700: #082db2;
-  --color-blue-600: #0a3fee;
-  --color-blue-50: #edf2ff;
+  --color-ink-600: #526661;
+  --color-blue-700: #06665d;
+  --color-blue-600: #087f73;
+  --color-blue-50: #e4f2ec;
   --color-orange-500: #ff7000;
   --color-white: #ffffff;
-  --color-gray-50: #f6f8fb;
-  --color-gray-100: #eef1f5;
-  --color-gray-200: #d9e0e9;
+  --color-gray-50: #fafbf9;
+  --color-gray-100: #f0f3f1;
+  --color-gray-200: #dde5e0;
+  --color-hero: #eaf5ef;
+  --color-cream: #f6f0e4;
+  --color-peach: #f5e2ce;
+  --color-mint: #dceee0;
+  --color-lilac: #ece9f3;
+  --color-blue-soft: #e5edf2;
+  --color-pink: #f3e3e5;
+  --color-warning: #805719;
+  --color-warning-soft: #fbf1dd;
+  --color-line-strong: #8ea99e;
+  --shadow-card: 0 4px 16px #16332f08;
+  --shadow-menu: 0 12px 36px #16332f18;
   --color-red-700: #a2232d;
   --color-red-50: #fff1f1;
 
@@ -40,7 +52,7 @@
   --radius-pill: 9999px;
   --motion-instant: 150ms;
   --motion-fast: 200ms;
-  --motion-normal: 300ms;
+  --motion-normal: 250ms;
 
   /* Semantic tokens */
   --color-background: var(--color-gray-50);

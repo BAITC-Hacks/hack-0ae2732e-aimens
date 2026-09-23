@@ -3,22 +3,27 @@ import { Card, emptyCard, Team } from "./task";
 export const draftExamples = [
   {
     title: "Меньше списаний в кофейне",
+    topic: "Торговля",
     text: "У нас сеть кофеен. Каждый вечер остаётся непроданная выпечка. Хотим понять, сколько готовить на завтра, чтобы сократить списания.",
   },
   {
     title: "Практика для студентов",
+    topic: "Образование",
     text: "Учебному центру нужен помощник для подбора практических заданий. Есть база из 200 заданий с темами и уровнями. Результат — прототип каталога для преподавателя.",
   },
   {
     title: "Маршруты курьеров",
+    topic: "Логистика",
     text: "Служба доставки вручную распределяет заказы между курьерами. Есть обезличенная таблица адресов. Нужно сократить время планирования с 40 до 10 минут.",
   },
   {
     title: "Учёт на складе",
+    topic: "Сервисы",
     text: "Магазин ведёт остатки в разных таблицах. Менеджеры тратят час на сверку. Нужна единая форма, которую можно использовать без установки программ.",
   },
   {
     title: "Отзывы клиентов",
+    topic: "Маркетинг",
     text: "Небольшое бюро хочет лучше понимать обратную связь клиентов. Сейчас отзывы читают вручную. Хотим находить повторяющиеся проблемы.",
   },
 ];
@@ -40,8 +45,10 @@ const coffee: Card = {
   contact: "hello@coffee.example",
   interaction:
     "Одна встреча на 30 минут в неделю, обратная связь по прототипу в течение двух дней.",
+  workFormat: "remote",
+  skills: ["Python", "Аналитика", "React"],
 };
-export const seedTasks = [
+export const seedTasks: { id: string; company: string; card: Card }[] = [
   { id: "task-coffee", company: "Kófe & Co", card: coffee },
   {
     id: "task-education",
@@ -61,6 +68,8 @@ export const seedTasks = [
       successTarget: "До 2 минут",
       constraints: "",
       contact: "practice@bilim.example",
+      workFormat: "remote",
+      skills: ["TypeScript", "UX/UI", "Next.js"],
     } as Card,
   },
   {
@@ -81,6 +90,8 @@ export const seedTasks = [
       successTarget: "До 10 минут",
       contact: "",
       constraints: "Работа с обезличенными адресами; срок — 3 недели",
+      workFormat: "hybrid",
+      skills: ["Python", "React", "Карты"],
     } as Card,
   },
   {
@@ -101,6 +112,8 @@ export const seedTasks = [
       successTarget: "",
       contact: "team@duken.example",
       constraints: "Без установки программ на компьютеры сотрудников",
+      workFormat: "onsite",
+      skills: ["React", "SQL", "UX/UI"],
     } as Card,
   },
   {
@@ -113,6 +126,8 @@ export const seedTasks = [
       context:
         "Команда читает десятки отзывов вручную и не успевает собирать общую картину.",
       need: "Понимать, какие проблемы клиенты упоминают чаще всего.",
+      workFormat: "remote",
+      skills: ["NLP", "Python", "Аналитика"],
     },
   },
 ];
@@ -124,6 +139,9 @@ export const seedTeams: Omit<Team, "points">[] = [
     tagline: "Превращаем данные в понятные решения",
     skills: ["Python", "React", "Аналитика"],
     interests: ["Торговля", "Логистика"],
+    university: "Sana Tech · демовуз",
+    memberCount: 4,
+    technologies: ["Python", "Pandas", "React"],
   },
   {
     id: "team-2",
@@ -132,6 +150,9 @@ export const seedTeams: Omit<Team, "points">[] = [
     tagline: "Делаем сложные процессы проще",
     skills: ["TypeScript", "UX/UI", "Next.js"],
     interests: ["Образование", "Сервисы"],
+    university: "Qadam University · демовуз",
+    memberCount: 3,
+    technologies: ["TypeScript", "Next.js", "Figma"],
   },
   {
     id: "team-3",
@@ -140,6 +161,9 @@ export const seedTeams: Omit<Team, "points">[] = [
     tagline: "Ищем закономерности и проверяем гипотезы",
     skills: ["Python", "SQL", "ML"],
     interests: ["Торговля", "Маркетинг"],
+    university: "Data Institute · демовуз",
+    memberCount: 4,
+    technologies: ["Python", "SQL", "scikit-learn"],
   },
   {
     id: "team-4",
@@ -148,6 +172,9 @@ export const seedTeams: Omit<Team, "points">[] = [
     tagline: "От идеи до первого рабочего прототипа",
     skills: ["React", "Node.js", "Дизайн"],
     interests: ["Логистика", "Сервисы"],
+    university: "Orbit University · демовуз",
+    memberCount: 5,
+    technologies: ["React", "Node.js", "Figma"],
   },
   {
     id: "team-5",
@@ -156,5 +183,8 @@ export const seedTeams: Omit<Team, "points">[] = [
     tagline: "Создаём инструменты для образования",
     skills: ["Python", "NLP", "Figma"],
     interests: ["Образование", "Маркетинг"],
+    university: "Jas Academy · демовуз",
+    memberCount: 3,
+    technologies: ["Python", "NLP", "Figma"],
   },
 ];

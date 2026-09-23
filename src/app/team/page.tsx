@@ -52,7 +52,7 @@ export default function TeamPage() {
               <h1>Мои отклики</h1>
               <p>От первой идеи до результата, который нужен бизнесу.</p>
             </div>
-            <Link className="button primary" href="/">
+            <Link className="button primary" href="/catalog">
               Найти задачу <ArrowUpRight size={16} />
             </Link>
           </div>
@@ -110,7 +110,7 @@ export default function TeamPage() {
             <Empty
               title="Здесь будут ваши предложения"
               text="Выберите задачу в каталоге и расскажите, как ваша команда может её решить. Доступны задачи с любым рейтингом."
-              href="/"
+              href="/catalog"
               action="Найти задачу"
             />
           )}

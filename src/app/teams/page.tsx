@@ -1,6 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { ArrowUpRight, Award } from "lucide-react";
+import { ArrowUpRight, Award, GraduationCap, Users } from "lucide-react";
 import { useDemo } from "@/components/demo-provider";
 import { DataGate } from "@/components/ui";
 
@@ -11,7 +11,7 @@ export default function TeamsPage() {
     <DataGate>
       <div className="page-heading">
         <div>
-          <div className="eyebrow">СООБЩЕСТВО ПРАКТИКИ</div>
+          <div className="eyebrow">КОМАНДЫ SANALINK</div>
           <h1>Команды, готовые пробовать</h1>
           <p>
             Пять демокоманд с разными навыками. Общий каталог открыт каждой.
@@ -29,12 +29,29 @@ export default function TeamsPage() {
             </div>
             <h2>{team.name}</h2>
             <p>{team.tagline}</p>
+            <div className="team-profile-meta">
+              <p className="subtle text-small">
+                <GraduationCap size={15} aria-hidden="true" />
+                {team.university || "Учебное заведение не указано"}
+              </p>
+              <p className="subtle text-small">
+                <Users size={15} aria-hidden="true" />
+                {team.memberCount
+                  ? `Участников: ${team.memberCount}`
+                  : "Состав команды не указан"}
+              </p>
+            </div>
             <div className="tags">
               {team.skills.map((skill) => (
                 <span key={skill}>{skill}</span>
               ))}
             </div>
             <p className="text-small">Интересы: {team.interests.join(" · ")}</p>
+            {!!team.technologies?.length && (
+              <p className="team-technologies text-small muted">
+                Технологии: {team.technologies.join(" · ")}
+              </p>
+            )}
             <div className="team-card-footer">
               <span style={{ display: "flex", gap: 7, alignItems: "center" }}>
                 <Award size={17} />

@@ -184,11 +184,15 @@ export function ProposalCard({
   );
   const business = actor === "business";
   return (
-    <article className="proposal-card">
+    <article className="proposal-card" id={`proposal-${proposal.id}`}>
       <div className="proposal-header">
         <div className="team-avatar">{team?.initials}</div>
         <div>
           <h3>{team?.name}</h3>
+          <p className="team-profile-meta text-small muted">
+            {team?.university || "Учебное заведение не указано"}
+            {team?.memberCount ? ` · Участников: ${team.memberCount}` : ""}
+          </p>
           {showTask && (
             <Link
               className="text-small muted"
@@ -200,46 +204,33 @@ export function ProposalCard({
         </div>
         <Status status={proposal.status} />
       </div>
+      {!!team?.skills.length && (
+        <div className="tags">
+          {team.skills.map((skill) => (
+            <span key={skill}>{skill}</span>
+          ))}
+        </div>
+      )}
       <h4>Идея решения</h4>
       <p>{proposal.idea}</p>
-      <h4>План</h4>
-      <p>{proposal.plan}</p>
+      <details className="proposal-expand">
+        <summary>План и информация о команде</summary>
+        <h4>План</h4>
+        <p>{proposal.plan}</p>
+        {team?.tagline && <p className="muted text-small">{team.tagline}</p>}
+        {!!team?.technologies?.length && (
+          <p className="text-small">
+            Технологии: {team.technologies.join(" · ")}
+          </p>
+        )}
+      </details>
       <div className="proposal-details">
         <span>Срок: {proposal.duration}</span>
         <a href={proposal.link} target="_blank" rel="noopener noreferrer">
           Прототип <ExternalLink size={12} />
         </a>
       </div>
-      {business && proposal.status === "pending" && (
-        <div className="form-actions">
-          <button
-            className="button primary small"
-            disabled={busy}
-            onClick={() => {
-              void act(
-                { type: "decide", proposalId: proposal.id, status: "selected" },
-                "Команда выбрана. Остальные предложения доступны для рассмотрения.",
-              ).catch(() => {});
-            }}
-          >
-            <Check size={14} />
-            Выбрать команду
-          </button>
-          <button
-            className="button secondary small"
-            disabled={busy}
-            onClick={() => {
-              void act(
-                { type: "decide", proposalId: proposal.id, status: "rejected" },
-                "Предложение отклонено",
-              ).catch(() => {});
-            }}
-          >
-            <X size={14} />
-            Отклонить
-          </button>
-        </div>
-      )}
+      <ProposalDecisionButtons proposal={proposal} />
       {proposal.status === "selected" && progress && (
         <div className="result-box">
           <h4>
@@ -300,5 +291,40 @@ export function ProposalCard({
         </p>
       )}
     </article>
+  );
+}
+
+export function ProposalDecisionButtons({ proposal }: { proposal: Proposal }) {
+  const { actor, act, busy } = useDemo();
+  if (actor !== "business" || proposal.status !== "pending") return null;
+  return (
+    <div className="form-actions">
+      <button
+        className="button primary small"
+        disabled={busy}
+        onClick={() => {
+          void act(
+            { type: "decide", proposalId: proposal.id, status: "selected" },
+            "Команда выбрана. Остальные предложения доступны для рассмотрения.",
+          ).catch(() => {});
+        }}
+      >
+        <Check size={14} aria-hidden="true" />
+        Выбрать команду
+      </button>
+      <button
+        className="button secondary small"
+        disabled={busy}
+        onClick={() => {
+          void act(
+            { type: "decide", proposalId: proposal.id, status: "rejected" },
+            "Предложение отклонено",
+          ).catch(() => {});
+        }}
+      >
+        <X size={14} aria-hidden="true" />
+        Отклонить
+      </button>
+    </div>
   );
 }

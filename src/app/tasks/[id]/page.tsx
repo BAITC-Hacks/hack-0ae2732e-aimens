@@ -8,11 +8,13 @@ import {
   Info,
   Users,
   MapPin,
+  CalendarDays,
 } from "lucide-react";
-import { accessLabels } from "@/domain/task";
+import { accessLabels, emptyCard, workFormatLabels } from "@/domain/task";
 import { useDemo } from "@/components/demo-provider";
 import { DataGate, Empty, Badge, ScorePanel } from "@/components/ui";
 import { ProposalCard, ProposalForm } from "@/components/proposals";
+import { ProposalComparison } from "@/components/proposal-comparison";
 
 export default function TaskPage({
   params,
@@ -30,11 +32,11 @@ export default function TaskPage({
         <Empty
           title="Задача не найдена"
           text="Неопубликованные задачи доступны в режиме бизнеса."
-          href="/"
+          href="/catalog"
         />
       ) : (
         <>
-          <Link href="/" className="back-link">
+          <Link href="/catalog" className="back-link">
             <ArrowLeft size={15} />
             Каталог задач
           </Link>
@@ -55,13 +57,34 @@ export default function TaskPage({
             <div className="detail-meta">
               <span className="subtle">
                 <MapPin size={14} />
-                Астана · можно работать удалённо
+                {workFormatLabels[task.card.workFormat ?? "unspecified"]}
               </span>
               <span className="subtle">
                 <Users size={14} />
                 {task.proposalCount} откликов
               </span>
+              <span className="subtle">
+                <CalendarDays size={14} aria-hidden="true" />
+                {task.publishedAt ? "Опубликована" : "Создана"}{" "}
+                <time dateTime={task.publishedAt ?? task.createdAt}>
+                  {new Date(
+                    task.publishedAt ?? task.createdAt,
+                  ).toLocaleDateString("ru-RU", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                    timeZone: "UTC",
+                  })}
+                </time>
+              </span>
             </div>
+            {!!task.card.skills?.length && (
+              <div className="tags task-skills" aria-label="Навыки для задачи">
+                {task.card.skills.map((skill) => (
+                  <span key={skill}>{skill}</span>
+                ))}
+              </div>
+            )}
           </div>
           <div className="content-columns">
             <div className="stack">
@@ -101,6 +124,12 @@ export default function TaskPage({
                     )}
                   </div>
                 ))}
+                {task.rawDescription && (
+                  <details className="task-source proposal-expand">
+                    <summary>Исходное описание бизнеса</summary>
+                    <p>{task.rawDescription}</p>
+                  </details>
+                )}
               </section>
               {actor === "business" ? (
                 <section className="stack">
@@ -115,9 +144,7 @@ export default function TaskPage({
                       Решение остаётся за вами.
                     </span>
                   </div>
-                  {proposals.map((proposal) => (
-                    <ProposalCard key={proposal.id} proposal={proposal} />
-                  ))}
+                  <ProposalComparison proposals={proposals} />
                   {!proposals.length && (
                     <Empty
                       title="Первое предложение впереди"
@@ -142,24 +169,24 @@ export default function TaskPage({
               )}
             </div>
             <aside className="sticky-aside stack">
-              <ScorePanel
-                card={
-                  task.confirmedAt
-                    ? task.card
-                    : {
-                        ...task.card,
-                        context: "",
-                        need: "",
-                        users: "",
-                        dataDescription: "",
-                        expectedResult: "",
-                        successMetric: "",
-                        constraints: "",
-                        contact: "",
-                        interaction: "",
-                      }
-                }
-              />
+              <ScorePanel card={task.confirmedAt ? task.card : emptyCard} />
+              <section className="panel">
+                <h2>{task.company}</h2>
+                <p className="muted text-small">{task.card.topic}</p>
+                <div className="detail-block">
+                  <h3>Формат работы</h3>
+                  <p>
+                    {workFormatLabels[task.card.workFormat ?? "unspecified"]}
+                  </p>
+                </div>
+                <div className="detail-block">
+                  <h3>Связь с бизнесом</h3>
+                  <p>
+                    {task.card.interaction ||
+                      "Формат взаимодействия пока не уточнён"}
+                  </p>
+                </div>
+              </section>
               {actor === "business" ? (
                 <div className="panel">
                   <h3 style={{ fontSize: 13, marginBottom: 10 }}>

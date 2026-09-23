@@ -14,6 +14,16 @@ export const accessLabels = {
   request: "По запросу",
   none: "Данных нет",
 } as const;
+export const workFormatLabels = {
+  remote: "Удалённо",
+  hybrid: "Гибридный формат",
+  onsite: "На месте",
+  unspecified: "Формат не указан",
+} as const;
+export type WorkFormat = keyof typeof workFormatLabels;
+export const workFormats = Object.entries(workFormatLabels).map(
+  ([key, label]) => ({ key: key as WorkFormat, label }),
+);
 const text = z.string().trim().max(4000);
 export const cardSchema = z.object({
   title: z.string().trim().max(160),
@@ -29,6 +39,10 @@ export const cardSchema = z.object({
   constraints: text,
   contact: text,
   interaction: text,
+  workFormat: z
+    .enum(["remote", "hybrid", "onsite", "unspecified"])
+    .default("unspecified"),
+  skills: z.array(z.string().trim().min(1).max(60)).max(12).default([]),
 });
 export type Card = z.infer<typeof cardSchema>;
 export const emptyCard: Card = {
@@ -45,6 +59,8 @@ export const emptyCard: Card = {
   constraints: "",
   contact: "",
   interaction: "",
+  workFormat: "unspecified",
+  skills: [],
 };
 export const fields = [
   {
@@ -109,7 +125,7 @@ export function readinessLevel(score: number) {
   return [...levels].reverse().find((level) => score >= level.min) ?? levels[0];
 }
 export function computeReadiness(card: Card) {
-  const has = (key: keyof Card) => !!card[key].trim();
+  const has = (key: FieldKey) => !!card[key].trim();
   const hasData =
     has("dataDescription") &&
     !["нет", "не уточнено", "данных нет"].includes(
@@ -198,6 +214,9 @@ export type Team = {
   interests: string[];
   initials: string;
   points: number;
+  university?: string;
+  memberCount?: number;
+  technologies?: string[];
 };
 export type Proposal = {
   id: string;

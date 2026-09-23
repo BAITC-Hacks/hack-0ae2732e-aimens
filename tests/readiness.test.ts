@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { emptyCard, computeReadiness, readinessLevel } from "@/domain/task";
+import {
+  emptyCard,
+  computeReadiness,
+  readinessLevel,
+  fields,
+} from "@/domain/task";
 
 describe("readiness", () => {
   it.each(["нет", "не уточнено", "  Данных нет  "])(
@@ -33,9 +38,8 @@ describe("readiness", () => {
     ).toBe(35);
   });
   it("awards 100 and subtracts removed information", () => {
-    const full = Object.fromEntries(
-      Object.keys(emptyCard).map((key) => [key, "Заполнено"]),
-    ) as typeof emptyCard;
+    const full = { ...emptyCard };
+    for (const { key } of fields) full[key] = "Заполнено";
     full.dataAccess = "public";
     const score = computeReadiness(full);
     expect(score.score).toBe(100);

@@ -14,7 +14,7 @@ export default function GuidePage() {
             проверяет бизнес.
           </p>
         </div>
-        <Link href="/" className="button primary">
+        <Link href="/catalog" className="button primary">
           В каталог <ArrowUpRight size={16} />
         </Link>
       </div>
@@ -73,7 +73,7 @@ export default function GuidePage() {
             </li>
           </ol>
         </section>
-        <section className="panel">
+        <section className="panel" id="rating">
           <div className="eyebrow">ПРОЗРАЧНАЯ ФОРМУЛА</div>
           <h2>Из чего складывается рейтинг</h2>
           {computeReadiness(emptyCard).breakdown.map((row) => (

@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowUpRight,
   Check,
@@ -7,10 +8,18 @@ import {
   Clock3,
   MessageSquare,
   ArrowRight,
+  Eye,
 } from "lucide-react";
-import { Readiness, Task, Card, computeReadiness } from "@/domain/task";
+import {
+  Readiness,
+  Task,
+  Card,
+  computeReadiness,
+  workFormatLabels,
+} from "@/domain/task";
 import { useDemo } from "./demo-provider";
-
+import { FavoriteButton } from "./favorites";
+import { ScoreRing } from "./score-ring";
 export function Loading() {
   return (
     <div className="loading" aria-busy="true" aria-label="Загрузка">
@@ -34,9 +43,7 @@ export function Empty({
 }) {
   return (
     <div className="empty">
-      <div className="empty-icon">
-        <Circle size={27} />
-      </div>
+      <Image src="/assets/svg/empty-state.svg" alt="" width={128} height={80} />
       <h2>{title}</h2>
       <p>{text}</p>
       {href && (
@@ -67,27 +74,14 @@ export function ScorePanel({
   return (
     <section className="panel score-panel">
       <div className="eyebrow">
-        {preview ? "ПРЕДВАРИТЕЛЬНАЯ ГОТОВНОСТЬ" : "ГОТОВНОСТЬ ЗАДАЧИ"}
+        {preview ? "ПРЕДВАРИТЕЛЬНЫЙ РЕЙТИНГ" : "РЕЙТИНГ ГОТОВНОСТИ"}
       </div>
-      <div className="score-big">
-        {result.score}
-        <span>/ 100</span>
-      </div>
+      <ScoreRing score={result.score} />
       <Badge readiness={result} />
-      <div
-        className="progress-track"
-        role="progressbar"
-        aria-label="Готовность задачи"
-        aria-valuenow={result.score}
-        aria-valuemin={0}
-        aria-valuemax={100}
-      >
-        <div style={{ width: `${result.score}%` }} />
-      </div>
-      <p className="muted text-small">
+      <p className="muted text-small score-description">
         {preview
-          ? "Рейтинг в каталоге изменится после подтверждения сведений."
-          : "Чем подробнее задача, тем проще команде приступить к работе."}
+          ? "Изменения станут публичными после подтверждения карточки."
+          : "Полнота задачи, а не оценка компании."}
       </p>
       <div className="score-breakdown">
         {result.breakdown.map((row) => (
@@ -98,37 +92,96 @@ export function ScorePanel({
               {row.earned}
               <small>/{row.max}</small>
             </strong>
+            <div className="score-row-track">
+              <i style={{ width: row.complete ? "100%" : "0%" }} />
+            </div>
           </div>
         ))}
       </div>
       {result.missing.length > 0 ? (
         <div className="improve">
-          <h3>Следующий шаг</h3>
-          <p>{result.missing[0].tip}</p>
-          <span>+{result.missing[0].max} баллов к готовности</span>
+          <h3>Что повысит рейтинг</h3>
+          {result.missing.slice(0, 3).map((row) => (
+            <div className="improvement-row" key={row.field}>
+              <strong>+{row.max}</strong>
+              <p>{row.tip}</p>
+            </div>
+          ))}
         </div>
       ) : (
-        <div className="improve">
-          <h3>Можно начинать!</h3>
-          <p>Все сведения заполнены. Командам будет проще оценить задачу.</p>
+        <div className="improve complete-note">
+          <Check size={18} />
+          <div>
+            <h3>Все детали на месте</h3>
+            <p>Команда может оценить объём работы.</p>
+          </div>
         </div>
       )}
     </section>
   );
 }
-export function TaskCard({ task }: { task: Task }) {
+export function categoryAsset(topic: string) {
   return (
-    <article className="task-card">
+    (
+      {
+        Торговля: "category-finance",
+        Образование: "category-education",
+        Логистика: "category-eco",
+        Сервисы: "category-it",
+        Маркетинг: "category-marketing",
+      } as Record<string, string>
+    )[topic] ?? "briefcase"
+  );
+}
+export function TaskCard({
+  task,
+  visual = false,
+  onPreview,
+  selected = false,
+}: {
+  task: Task;
+  visual?: boolean;
+  onPreview?: () => void;
+  selected?: boolean;
+}) {
+  return (
+    <article
+      className={`task-card ${visual ? "visual-card" : ""} ${selected ? "is-selected" : ""}`}
+      data-task-id={task.id}
+    >
+      {visual && (
+        <div className={`task-visual topic-${task.card.topic}`}>
+          <Image
+            src={`/assets/svg/${categoryAsset(task.card.topic)}.svg`}
+            alt=""
+            width={68}
+            height={68}
+          />
+          <span>{task.card.topic}</span>
+          <span className="visual-word">{task.company}</span>
+        </div>
+      )}
       <div className="task-card-content">
         <div className="task-card-top">
-          <div className="company-mark" aria-hidden="true">
+          <div
+            className={`company-mark topic-${task.card.topic}`}
+            aria-hidden="true"
+          >
             {task.company.slice(0, 1)}
           </div>
           <div className="company-info">
             <strong>{task.company}</strong>
-            <span>{task.card.topic}</span>
+            <span>
+              {task.card.topic} ·{" "}
+              {task.publishedAt
+                ? new Date(task.publishedAt).toLocaleDateString("ru-RU", {
+                    day: "numeric",
+                    month: "short",
+                  })
+                : "Черновик"}
+            </span>
           </div>
-          <Badge readiness={task.readiness} />
+          <FavoriteButton id={task.id} title={task.card.title} />
         </div>
         <h2>
           <Link href={`/tasks/${task.id}`}>{task.card.title}</Link>
@@ -138,33 +191,46 @@ export function TaskCard({ task }: { task: Task }) {
             task.card.context ||
             "Бизнес уточняет детали этой задачи."}
         </p>
+        <div className="tags">
+          {(task.card.skills ?? []).slice(0, 3).map((skill) => (
+            <span key={skill}>{skill}</span>
+          ))}
+        </div>
         <div className="task-card-footer">
-          <span>
-            {task.readiness.breakdown.find(
-              (row) => row.field === "dataDescription",
-            )?.complete
-              ? "Данные доступны"
-              : "Данные уточняются"}
-          </span>
+          <span>{workFormatLabels[task.card.workFormat ?? "unspecified"]}</span>
           <span className="subtle">
-            <MessageSquare size={16} aria-hidden="true" />
+            <MessageSquare size={14} />
             {task.proposalCount} откликов
           </span>
         </div>
-      </div>
-      <div className="task-card-action">
-        <span className="readiness-value">
-          <strong>{task.readiness.score}</strong>
-          <span>/ 100</span>
-        </span>
-        <span className="readiness-caption">готовность задачи</span>
-        <Link
-          href={`/tasks/${task.id}`}
-          className="text-link"
-          aria-label={`Открыть задачу: ${task.card.title}`}
-        >
-          Открыть <ArrowUpRight size={18} />
-        </Link>
+        <div className="task-card-bottom">
+          <div className="mini-score">
+            <strong>
+              {task.readiness.score}
+              <small>/100</small>
+            </strong>
+            <Badge readiness={task.readiness} />
+          </div>
+          {onPreview ? (
+            <button
+              className="text-link preview-button"
+              onClick={onPreview}
+              aria-label={`Предпросмотр: ${task.card.title}`}
+              aria-pressed={selected}
+            >
+              <Eye size={16} />
+              <span>Обзор</span>
+            </button>
+          ) : (
+            <Link
+              href={`/tasks/${task.id}`}
+              className="icon-button"
+              aria-label={`Открыть задачу: ${task.card.title}`}
+            >
+              <ArrowUpRight size={19} />
+            </Link>
+          )}
+        </div>
       </div>
     </article>
   );

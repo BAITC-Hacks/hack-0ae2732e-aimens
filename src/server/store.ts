@@ -4,6 +4,7 @@ import { dirname, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import {
   actionSchema,
+  cardSchema,
   ActionResult,
   Card,
   computeReadiness,
@@ -25,6 +26,23 @@ export class DemoError extends Error {
   }
 }
 type Row = Record<string, string | null>;
+
+function readCard(row: Row): Card {
+  const stored = JSON.parse(row.card!);
+  const seed = seedTasks.find((task) => task.id === row.id)?.card;
+  const unchangedSeed =
+    seed &&
+    Object.entries(seed).every(
+      ([key, value]) =>
+        key === "skills" || key === "workFormat" || stored[key] === value,
+    );
+  return cardSchema.parse({
+    ...(unchangedSeed
+      ? { workFormat: seed.workFormat, skills: seed.skills }
+      : {}),
+    ...stored,
+  });
+}
 
 export class Store {
   private db: DatabaseSync;
@@ -116,7 +134,7 @@ export class Store {
     )
       .map((row) => ({
         id: row.id!,
-        card: JSON.parse(row.card!) as Card,
+        card: readCard(row),
         rawDescription: row.raw_description!,
         company: row.company!,
         createdAt: row.created_at!,
@@ -146,6 +164,7 @@ export class Store {
     const teams: Team[] = (
       this.db.prepare("SELECT * FROM teams ORDER BY id").all() as Row[]
     ).map((row) => ({
+      ...seedTeams.find((team) => team.id === row.id),
       ...JSON.parse(row.profile!),
       points:
         Number(

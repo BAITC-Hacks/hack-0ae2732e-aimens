@@ -4,6 +4,7 @@ import { emptyCard } from "@/domain/task";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 
 const stores: Store[] = [];
 function fresh() {
@@ -14,6 +15,58 @@ function fresh() {
 afterEach(() => stores.splice(0).forEach((store) => store.close()));
 
 describe("demo workflow", () => {
+  it("restores legacy metadata only for unchanged seed cards", () => {
+    const path = join(
+      mkdtempSync(join(tmpdir(), "sanalink-legacy-")),
+      "legacy.sqlite",
+    );
+    const first = new Store(path);
+    const original = first.snapshot("business");
+    first.close();
+
+    // Simulate cards persisted before workFormat and skills existed.
+    const legacyDb = new DatabaseSync(path);
+    try {
+      for (const id of ["task-coffee", "task-education"]) {
+        const task = original.tasks.find((item) => item.id === id)!;
+        const card: Record<string, unknown> = { ...task.card };
+        delete card.workFormat;
+        delete card.skills;
+        if (id === "task-coffee") {
+          card.title = "Новая задача учебного центра";
+          card.topic = "Образование";
+        }
+        legacyDb
+          .prepare("UPDATE tasks SET card=? WHERE id=?")
+          .run(JSON.stringify(card), id);
+      }
+    } finally {
+      legacyDb.close();
+    }
+
+    const reopened = new Store(path);
+    stores.push(reopened);
+    const tasks = reopened.snapshot("team-1").tasks;
+    const edited = tasks.find((task) => task.id === "task-coffee")!;
+    const untouched = tasks.find((task) => task.id === "task-education")!;
+    const originalEdited = original.tasks.find(
+      (task) => task.id === edited.id,
+    )!;
+    const originalUntouched = original.tasks.find(
+      (task) => task.id === untouched.id,
+    )!;
+
+    expect(edited.card).toMatchObject({
+      title: "Новая задача учебного центра",
+      topic: "Образование",
+      workFormat: "unspecified",
+      skills: [],
+    });
+    expect(edited.readiness).toEqual(originalEdited.readiness);
+    expect(edited.confirmedAt).toBe(originalEdited.confirmedAt);
+    expect(untouched.card).toEqual(originalUntouched.card);
+    expect(untouched.readiness).toEqual(originalUntouched.readiness);
+  });
   it("persists confirmed tasks, proposals and rewards across a database reopen", () => {
     const path = join(
       mkdtempSync(join(tmpdir(), "praktika-store-")),

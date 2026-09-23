@@ -1,4 +1,26 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
+import type { Snapshot } from "../../src/domain/task";
+
+async function switchProfile(page: Page, actor: string) {
+  const select = page.getByLabel("Демопрофиль");
+  if (!(await select.isVisible()))
+    await page.getByLabel("Открыть профиль").click();
+  await select.selectOption(actor);
+  await expect(select).toHaveValue(actor);
+  if (await select.isVisible())
+    await page.getByLabel("Открыть профиль").click();
+}
+
+async function openWorkspace(page: Page, name: string) {
+  if (!(await page.getByLabel("Демопрофиль").isVisible()))
+    await page.getByLabel("Открыть профиль").click();
+  await page
+    .locator(".profile-menu")
+    .getByRole("link", { name, exact: true })
+    .click();
+  if (await page.getByLabel("Демопрофиль").isVisible())
+    await page.getByLabel("Открыть профиль").click();
+}
 
 test("mobile navigation stays named and the catalog does not overflow", async ({
   page,
@@ -11,10 +33,10 @@ test("mobile navigation stays named and the catalog does not overflow", async ({
   await expect(
     navigation.getByRole("link", { name: "Каталог задач" }),
   ).toBeVisible();
-  await expect(navigation.getByText("Каталог", { exact: true })).toBeVisible();
   await expect(
-    navigation.getByRole("link", { name: "Как это работает" }),
+    navigation.getByRole("link", { name: "О платформе" }),
   ).toBeVisible();
+  await expect(page.locator(".task-card").first()).toBeVisible();
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth),
   ).toBeLessThanOrEqual(320);
@@ -24,18 +46,33 @@ test("mobile navigation stays named and the catalog does not overflow", async ({
     "outline-width",
     "3px",
   );
-  await page.setViewportSize({ width: 1030, height: 714 });
+  await navigation
+    .getByRole("link", { name: "Каталог задач", exact: true })
+    .click();
+  await expect(page.locator(".task-card").first()).toBeVisible();
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth),
-  ).toBeLessThanOrEqual(1030);
+  ).toBeLessThanOrEqual(320);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(1280);
 });
 
 test("business and a team complete the whole workflow", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
+  const initialResponse = await page.request.get("/api/demo", {
+    headers: { "x-demo-actor": "business" },
+  });
+  const initial: Snapshot = await initialResponse.json();
+  const initialPoints = initial.teams.find(
+    (team) => team.id === "team-1",
+  )!.points;
   await page.goto("/");
   await page
-    .getByRole("link", { name: "Предложить задачу", exact: true })
+    .getByRole("navigation", { name: "Основная навигация" })
+    .getByRole("link", { name: "Разместить задачу", exact: true })
     .click();
   await page
     .getByRole("textbox", { name: "Описание задачи" })
@@ -76,11 +113,16 @@ test("business and a team complete the whole workflow", async ({ page }) => {
     "aria-valuenow",
     "100",
   );
+  await page.getByRole("button", { name: "Предпросмотр", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Опубликовать задачу" }),
   ).toBeDisabled();
-  await page.getByRole("checkbox").check();
+  await page.getByRole("checkbox", { name: /Я проверил/ }).check();
+  await page
+    .getByRole("button", { name: "Подтвердить карточку", exact: true })
+    .click();
   await page.getByRole("button", { name: "Опубликовать задачу" }).click();
+  await expect(page).toHaveURL(/\/tasks\/[a-f0-9-]{36}$/);
   await expect(
     page.getByRole("heading", { name: "E2E: прогноз выпечки" }),
   ).toBeVisible();
@@ -99,7 +141,7 @@ test("business and a team complete the whole workflow", async ({ page }) => {
     "100",
   );
 
-  await page.getByLabel("Демопрофиль").selectOption("team-1");
+  await switchProfile(page, "team-1");
   await page.getByLabel("Идея решения").fill("Прогноз спроса на основе продаж");
   await page
     .getByLabel("План работы")
@@ -114,7 +156,7 @@ test("business and a team complete the whole workflow", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Предложение отправлено" }),
   ).toBeVisible();
-  await page.getByLabel("Демопрофиль").selectOption("business");
+  await switchProfile(page, "business");
   await page
     .getByRole("button", { name: "Выбрать команду", exact: true })
     .click();
@@ -122,7 +164,7 @@ test("business and a team complete the whole workflow", async ({ page }) => {
     page.getByText("Команда выбрана", { exact: true }),
   ).toBeVisible();
 
-  await page.getByLabel("Демопрофиль").selectOption("team-1");
+  await switchProfile(page, "team-1");
   await page
     .getByLabel("Что сделано")
     .fill("Подготовлен первый прогноз на синтетических данных");
@@ -135,19 +177,18 @@ test("business and a team complete the whole workflow", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Первый результат на проверке" }),
   ).toBeVisible();
-  await page.getByLabel("Демопрофиль").selectOption("business");
+  await switchProfile(page, "business");
   await page
     .getByRole("button", { name: "Подтвердить результат · +10" })
     .click();
   await expect(
     page.getByRole("heading", { name: "Первый результат подтверждён" }),
   ).toBeVisible();
-  await page.getByLabel("Демопрофиль").selectOption("team-1");
-  await page
-    .getByRole("navigation")
-    .getByRole("link", { name: "Мои отклики" })
-    .click();
-  await expect(page.getByTestId("team-points")).toHaveText("10");
+  await switchProfile(page, "team-1");
+  await openWorkspace(page, "Мои отклики");
+  await expect(page.getByTestId("team-points")).toHaveText(
+    String(initialPoints + 10),
+  );
   await page.goto(taskUrl);
   await expect(
     page.getByRole("heading", { name: "Первый результат подтверждён" }),
@@ -158,13 +199,21 @@ test("business and a team complete the whole workflow", async ({ page }) => {
 test("all pages work and catalog filters do not restrict team access", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/catalog");
   await expect(page.locator(".task-card").first()).toBeVisible();
-  await page.getByRole("button", { name: "Маркетинг", exact: true }).click();
+  await page.getByLabel("Поиск задач", { exact: true }).fill("Forma Studio");
+  await page.getByLabel("Поиск задач", { exact: true }).press("Enter");
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get("q"))
+    .toBe("Forma Studio");
+  await page.getByRole("button", { name: /^Маркетинг/ }).click();
+  await expect(
+    page.getByRole("button", { name: /^Маркетинг/ }),
+  ).toHaveAttribute("aria-pressed", "true");
   await page.getByLabel("Уровень готовности").selectOption("draft");
   await expect(page.locator(".task-card")).toHaveCount(1);
   await expect(page.locator(".task-card")).toContainText("20");
-  await page.getByLabel("Демопрофиль").selectOption("team-5");
+  await switchProfile(page, "team-5");
   await expect(page.locator(".task-card")).toHaveCount(1);
   await page
     .getByRole("link", {
@@ -175,10 +224,7 @@ test("all pages work and catalog filters do not restrict team access", async ({
   await expect(
     page.getByRole("heading", { name: "Предложите своё решение" }),
   ).toBeVisible();
-  await page
-    .getByRole("navigation")
-    .getByRole("link", { name: "Мои отклики" })
-    .click();
+  await openWorkspace(page, "Мои отклики");
   await expect(
     page.getByRole("heading", { name: "Мои отклики", exact: true }),
   ).toBeVisible();
@@ -187,15 +233,15 @@ test("all pages work and catalog filters do not restrict team access", async ({
     .getByRole("link", { name: "Команды", exact: true })
     .click();
   await expect(page.locator(".team-card")).toHaveCount(5);
-  await page.getByRole("link", { name: "Как это работает" }).click();
+  await page
+    .getByRole("navigation", { name: "Основная навигация" })
+    .getByRole("link", { name: "О платформе", exact: true })
+    .click();
   await expect(
     page.getByRole("heading", { name: "Из чего складывается рейтинг" }),
   ).toBeVisible();
-  await page.getByLabel("Демопрофиль").selectOption("business");
-  await page
-    .getByRole("navigation")
-    .getByRole("link", { name: "Мои задачи и отклики" })
-    .click();
+  await switchProfile(page, "business");
+  await openWorkspace(page, "Мои задачи и отклики");
   await expect(
     page.getByRole("heading", { name: "Кабинет бизнеса" }),
   ).toBeVisible();
