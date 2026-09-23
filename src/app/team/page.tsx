@@ -5,6 +5,7 @@ import { ArrowUpRight, Check, Circle } from "lucide-react";
 import { useDemo } from "@/components/demo-provider";
 import { DataGate, Empty } from "@/components/ui";
 import { ProposalCard } from "@/components/proposals";
+import { TeamIcon } from "@/components/team-icon";
 
 export default function TeamPage() {
   const { data, actor, setActor } = useDemo();
@@ -72,9 +73,11 @@ export default function TeamPage() {
                 key={team.id}
                 onClick={() => setActor(team.id)}
               >
-                <div className="team-avatar">{team.initials}</div>
-                <h2>{team.name}</h2>
-                <p>{team.tagline}</p>
+                <div className="team-avatar">
+                  <TeamIcon iconKey={team.iconKey} />
+                </div>
+                <h2 data-no-translate>{team.name}</h2>
+                <p data-no-translate>{team.tagline}</p>
                 <span className="text-link">
                   Войти в деморежим <ArrowUpRight size={16} />
                 </span>
@@ -86,7 +89,9 @@ export default function TeamPage() {
         <>
           <div className="page-heading">
             <div>
-              <div className="eyebrow">КАБИНЕТ КОМАНДЫ · {team.name}</div>
+              <div className="eyebrow">
+                КАБИНЕТ КОМАНДЫ · <span data-no-translate>{team.name}</span>
+              </div>
               <h1>Мои отклики</h1>
               <p>От первой идеи до результата, который нужен бизнесу.</p>
             </div>

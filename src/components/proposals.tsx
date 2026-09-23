@@ -13,6 +13,7 @@ import {
 import { Proposal, Task, Progress } from "@/domain/task";
 import { useDemo } from "./demo-provider";
 import { Status } from "./ui";
+import { TeamIcon } from "./team-icon";
 
 export function ProposalForm({ task }: { task: Task }) {
   const { actor, act, busy, data } = useDemo();
@@ -51,7 +52,7 @@ export function ProposalForm({ task }: { task: Task }) {
     <section className="panel" id="proposal">
       <div className="section-title">
         <h2>Предложите своё решение</h2>
-        <span>{team?.name}</span>
+        <span data-no-translate>{team?.name}</span>
       </div>
       <p className="text-small muted" style={{ marginBottom: 22 }}>
         Расскажите, как ваша команда подойдёт к задаче. Окончательное решение
@@ -224,11 +225,17 @@ export function ProposalCard({
   return (
     <article className="proposal-card" id={`proposal-${proposal.id}`}>
       <div className="proposal-header">
-        <div className="team-avatar">{team?.initials}</div>
+        <div className="team-avatar">
+          <TeamIcon iconKey={team?.iconKey} />
+        </div>
         <div>
-          <h3>{team?.name}</h3>
+          <h3 data-no-translate>{team?.name}</h3>
           <p className="team-profile-meta text-small muted">
-            {team?.university || "Учебное заведение не указано"}
+            {team?.university ? (
+              <span data-no-translate>{team.university}</span>
+            ) : (
+              "Учебное заведение не указано"
+            )}
             {team?.memberCount ? ` · Участников: ${team.memberCount}` : ""}
           </p>
           {showTask && (
@@ -236,7 +243,11 @@ export function ProposalCard({
               className="text-small muted"
               href={`/tasks/${proposal.taskId}`}
             >
-              {task?.card.title || "Открыть задачу"}
+              {task?.card.title ? (
+                <span data-no-translate>{task.card.title}</span>
+              ) : (
+                "Открыть задачу"
+              )}
             </Link>
           )}
         </div>
@@ -245,25 +256,34 @@ export function ProposalCard({
       {!!team?.skills.length && (
         <div className="tags">
           {team.skills.map((skill) => (
-            <span key={skill}>{skill}</span>
+            <span key={skill} data-no-translate>
+              {skill}
+            </span>
           ))}
         </div>
       )}
       <h4>Идея решения</h4>
-      <p>{proposal.idea}</p>
+      <p data-no-translate>{proposal.idea}</p>
       <details className="proposal-expand">
         <summary>План и информация о команде</summary>
         <h4>План</h4>
-        <p>{proposal.plan}</p>
-        {team?.tagline && <p className="muted text-small">{team.tagline}</p>}
+        <p data-no-translate>{proposal.plan}</p>
+        {team?.tagline && (
+          <p className="muted text-small" data-no-translate>
+            {team.tagline}
+          </p>
+        )}
         {!!team?.technologies?.length && (
           <p className="text-small">
-            Технологии: {team.technologies.join(" · ")}
+            Технологии:{" "}
+            <span data-no-translate>{team.technologies.join(" · ")}</span>
           </p>
         )}
       </details>
       <div className="proposal-details">
-        <span>Срок: {proposal.duration}</span>
+        <span>
+          Срок: <span data-no-translate>{proposal.duration}</span>
+        </span>
         <a href={proposal.link} target="_blank" rel="noopener noreferrer">
           Прототип <ExternalLink size={12} />
         </a>
@@ -276,7 +296,7 @@ export function ProposalCard({
               ? "Первый результат подтверждён"
               : "Первый результат на проверке"}
           </h4>
-          <p>{progress.description}</p>
+          <p data-no-translate>{progress.description}</p>
           <a
             href={progress.link}
             className="text-link"

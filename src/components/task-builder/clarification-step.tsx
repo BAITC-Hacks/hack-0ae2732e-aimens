@@ -71,9 +71,10 @@ export function ClarificationStep({
               return (
                 <article className={styles.suggestion} key={key}>
                   <h4>{label}</h4>
-                  <p>{analysis.suggestions[key]}</p>
+                  <p data-no-translate>{analysis.suggestions[key]}</p>
                   <blockquote className={styles.source}>
-                    Источник: «{analysis.sources[key]}»
+                    Источник: «
+                    <span data-no-translate>{analysis.sources[key]}</span>»
                   </blockquote>
                   <div className={styles.suggestionActions}>
                     {accepted ? (

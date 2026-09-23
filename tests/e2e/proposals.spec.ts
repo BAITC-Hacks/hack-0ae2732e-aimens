@@ -45,7 +45,11 @@ test("team can correct its first result until business confirms it", async ({
   });
   await page.goto(`/tasks/${taskId}`);
   await page.getByLabel("Открыть профиль").click();
-  await page.getByLabel("Демопрофиль").selectOption("team-3");
+  await page
+    .locator(".profile-menu")
+    .getByRole("button", { name: "Команда", exact: true })
+    .click();
+  await page.getByLabel("Команда в профиле").selectOption("team-3");
   await page.getByLabel("Открыть профиль").click();
   const proposal = page.locator(`#proposal-${proposalId}`);
   await proposal.getByRole("button", { name: "Исправить результат" }).click();
@@ -149,18 +153,20 @@ test("one result row and one reward for two selected proposals from the same tea
 test("business compares proposals and independently selects two teams", async ({
   page,
 }) => {
+  const card = {
+    ...emptyCard,
+    title: "E2E: сравнение подходов команд",
+    topic: "Маркетинг",
+    workFormat: "hybrid" as const,
+    skills: ["Python", "Аналитика"],
+  };
+  const rawDescription = "Хотим быстрее понимать обратную связь клиентов.";
   const taskResponse = await page.request.post("/api/demo", {
     headers: { "x-demo-actor": "business" },
     data: {
       type: "save-task",
-      card: {
-        ...emptyCard,
-        title: "E2E: сравнение подходов команд",
-        topic: "Маркетинг",
-        workFormat: "hybrid",
-        skills: ["Python", "Аналитика"],
-      },
-      rawDescription: "Хотим быстрее понимать обратную связь клиентов.",
+      card,
+      rawDescription,
       confirmed: true,
       publish: true,
     },

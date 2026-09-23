@@ -59,7 +59,9 @@ export function CardFields({
               onChange={(event) => update("topic", event.target.value)}
             >
               {topics.map((topic) => (
-                <option key={topic}>{topic}</option>
+                <option key={topic} value={topic}>
+                  {topic}
+                </option>
               ))}
             </select>
           </label>

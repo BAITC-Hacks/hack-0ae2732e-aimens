@@ -107,6 +107,59 @@ try {
     confirmed: true,
     publish: true,
   });
+  // Publishing and proposing remain available with zero readiness and no AI review.
+  const lowScoreCard = {
+    ...initial.tasks.find((task) => !task.publishedAt).card,
+    title: "Задача с нулевой готовностью",
+  };
+  const { taskId: lowScoreTaskId } = await request("/api/demo", "business", {
+    type: "save-task",
+    card: lowScoreCard,
+    rawDescription: "",
+    confirmed: true,
+    publish: true,
+  });
+  await request("/api/demo", "team-2", {
+    type: "propose",
+    taskId: lowScoreTaskId,
+    idea: "Поможем уточнить задачу",
+    plan: "Уточним потребность и соберём прототип",
+    duration: "Две недели",
+    link: "https://example.com/low-score",
+  });
+
+  // The review and save routes must share tickets in the real production process.
+  // A weak source yields lower advisory scores without lowering confirmed readiness.
+  const reviewedCard = {
+    ...card,
+    title: "Задача с необязательными рекомендациями",
+  };
+  const reviewedRaw = "Короткий текст";
+  const review = await request("/api/review-task", "business", {
+    rawDescription: reviewedRaw,
+    card: reviewedCard,
+  });
+  assert.equal(review.assessment.mode, "local");
+  assert.ok(review.assessment.score <= 20);
+  const { taskId: reviewedTaskId } = await request("/api/demo", "business", {
+    type: "save-task",
+    card: reviewedCard,
+    rawDescription: reviewedRaw,
+    confirmed: true,
+    publish: true,
+    reviewToken: review.reviewToken,
+  });
+  const publishedTasks = (await request("/api/demo", "team-1")).tasks;
+  assert.equal(
+    publishedTasks.find((task) => task.id === lowScoreTaskId).readiness.score,
+    0,
+  );
+  const reviewedTask = publishedTasks.find(
+    (task) => task.id === reviewedTaskId,
+  );
+  assert.deepEqual(reviewedTask.qualityAssessment, review.assessment);
+  assert.equal(reviewedTask.readiness.score, 100);
+  assert.deepEqual(reviewedTask.readiness, analysis.preliminaryReadiness);
   const { proposalId } = await request("/api/demo", "team-1", {
     type: "propose",
     taskId,
@@ -141,7 +194,7 @@ try {
   });
   assert.deepEqual(await request("/api/demo"), before);
   console.log(
-    "PASS: production without a key, full workflow, process restart, unchanged SQLite data, exactly 10 points.",
+    "PASS: production without a key, low-score publication and proposal, optional advice without rating changes, full workflow, process restart, unchanged SQLite data, exactly 10 points.",
   );
   console.log(`Temporary evidence database: ${database}`);
 } finally {

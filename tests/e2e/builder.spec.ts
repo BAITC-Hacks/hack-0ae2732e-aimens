@@ -249,7 +249,9 @@ test("preview needs confirmation and permits publication at low readiness", asyn
     page.getByRole("heading", { name: title, exact: true }),
   ).toBeVisible();
   await page.getByLabel("Открыть профиль", { exact: true }).click();
-  await page.getByLabel("Демопрофиль").selectOption("team-5");
+  await page.getByRole("button", { name: "Команда", exact: true }).click();
+  await page.getByLabel("Команда в профиле").selectOption("team-5");
+  await page.getByLabel("Открыть профиль", { exact: true }).click();
   await expect(page.getByLabel("Идея решения")).toBeVisible();
   await page
     .getByLabel("Идея решения")

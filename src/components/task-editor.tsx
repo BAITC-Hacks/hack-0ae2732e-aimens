@@ -38,6 +38,8 @@ export function TaskEditor({ task }: { task?: Task }) {
     raw,
     busy,
     analyzing,
+    reviewing,
+    suggestingTopic,
     analysis,
     confirmed,
     goToStep,
@@ -54,6 +56,7 @@ export function TaskEditor({ task }: { task?: Task }) {
     rejectSuggestion,
     save,
   } = builder;
+  const pending = busy || analyzing || reviewing || suggestingTopic;
   if (actor !== "business")
     return (
       <>
@@ -101,10 +104,7 @@ export function TaskEditor({ task }: { task?: Task }) {
               type="button"
               aria-current={step === index ? "step" : undefined}
               disabled={
-                busy ||
-                analyzing ||
-                index > reachedStep ||
-                (index === 1 && !analysis)
+                pending || index > reachedStep || (index === 1 && !analysis)
               }
               onClick={() => goToStep(index as BuilderStep)}
             >
@@ -120,7 +120,7 @@ export function TaskEditor({ task }: { task?: Task }) {
         <section
           className="panel"
           aria-labelledby="builder-stage-title"
-          aria-busy={analyzing || busy}
+          aria-busy={pending}
         >
           <h2
             id="builder-stage-title"
@@ -158,16 +158,19 @@ export function TaskEditor({ task }: { task?: Task }) {
           )}
           <fieldset
             className={styles.stageFields}
-            disabled={busy || analyzing}
+            disabled={pending}
             aria-label={headings[step]}
           >
             {step === 0 && (
               <DraftStep
                 card={card}
                 raw={raw}
-                disabled={analyzing || busy}
+                disabled={pending}
                 setRaw={setRaw}
                 update={update}
+                suggestTopic={builder.suggestTopic}
+                suggestingTopic={suggestingTopic}
+                topicSuggestion={builder.topicSuggestion}
               />
             )}
             {step === 1 && analysis && (
@@ -214,6 +217,9 @@ export function TaskEditor({ task }: { task?: Task }) {
                 setAcknowledged={setAcknowledged}
                 confirm={confirm}
                 edit={() => goToStep(2)}
+                qualityAssessment={builder.qualityAssessment}
+                reviewing={reviewing}
+                reviewTask={builder.reviewTask}
               />
             )}
             <div className={`form-actions ${styles.actions}`}>

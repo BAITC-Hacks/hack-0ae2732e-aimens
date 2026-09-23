@@ -1,4 +1,11 @@
-import { Check, CheckCheck, Pencil, ShieldCheck } from "lucide-react";
+import {
+  Check,
+  CheckCheck,
+  LoaderCircle,
+  Pencil,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
 import {
   Card,
   accessLabels,
@@ -18,6 +25,9 @@ export function PublishStep({
   setAcknowledged,
   confirm,
   edit,
+  qualityAssessment,
+  reviewing,
+  reviewTask,
 }: {
   card: Card;
   raw: string;
@@ -27,6 +37,9 @@ export function PublishStep({
   setAcknowledged: (value: boolean) => void;
   confirm: () => void;
   edit: () => void;
+  qualityAssessment: import("@/domain/task").QualityAssessment | null;
+  reviewing: boolean;
+  reviewTask: () => void;
 }) {
   return (
     <>
@@ -39,26 +52,34 @@ export function PublishStep({
         aria-label="Предпросмотр карточки задачи"
       >
         <div className={styles.previewMeta}>
-          <span>{company}</span>
+          <span data-no-translate>{company}</span>
           <Badge readiness={computeReadiness(card)} />
         </div>
-        <h3>{card.title.trim() || "Название задачи пока не указано"}</h3>
+        <h3 data-no-translate={!!card.title.trim() || undefined}>
+          {card.title.trim() || "Название задачи пока не указано"}
+        </h3>
         <div className={styles.previewTags}>
           <span>{card.topic || "Тема не указана"}</span>
           <span>{workFormatLabels[card.workFormat]}</span>
           {card.skills.map((skill) => (
-            <span key={skill}>{skill}</span>
+            <span key={skill} data-no-translate>
+              {skill}
+            </span>
           ))}
         </div>
         <dl className={styles.previewFields}>
           <div>
             <dt>Исходное описание</dt>
-            <dd>{raw.trim() || "Пока не уточнено"}</dd>
+            <dd data-no-translate={!!raw.trim() || undefined}>
+              {raw.trim() || "Пока не уточнено"}
+            </dd>
           </div>
           {fields.map((field) => (
             <div key={field.key}>
               <dt>{field.label}</dt>
-              <dd>{card[field.key].trim() || "Пока не уточнено"}</dd>
+              <dd data-no-translate={!!card[field.key].trim() || undefined}>
+                {card[field.key].trim() || "Пока не уточнено"}
+              </dd>
               {field.key === "dataDescription" && (
                 <dd className={styles.access}>
                   Доступ: {accessLabels[card.dataAccess]}
@@ -72,14 +93,63 @@ export function PublishStep({
           Редактировать карточку
         </button>
       </article>
+      <section
+        className={styles.confirmation}
+        aria-label="Рекомендации по задаче"
+      >
+        <h3>Рекомендации по содержанию · необязательно</h3>
+        <p>
+          Помощник подскажет, какие детали стоит уточнить. Эта оценка не меняет
+          рейтинг готовности и не требуется для публикации.
+        </p>
+        <button
+          type="button"
+          className="button secondary"
+          disabled={reviewing}
+          onClick={reviewTask}
+        >
+          {reviewing ? (
+            <LoaderCircle size={16} className="spin" />
+          ) : (
+            <Sparkles size={16} />
+          )}
+          {reviewing
+            ? "Анализируем задачу…"
+            : qualityAssessment
+              ? "Повторить анализ задачи"
+              : "Анализ задачи"}
+        </button>
+        {qualityAssessment && (
+          <div className={styles.qualityResult} role="status">
+            <strong>{qualityAssessment.score} / 100 баллов</strong>
+            <p>{qualityAssessment.summary}</p>
+            <ul>
+              {qualityAssessment.dimensions.map((item) => (
+                <li key={item.field}>
+                  <span>{item.label}</span>
+                  <b>
+                    {item.score}/{item.max}
+                  </b>
+                  <small>{item.reason}</small>
+                </li>
+              ))}
+            </ul>
+            <small>
+              {qualityAssessment.mode === "openai"
+                ? "AI-анализ"
+                : "Локальная оценка"}
+            </small>
+          </div>
+        )}
+      </section>
       <div className={styles.confirmation}>
         <div className={styles.confirmTitle}>
           <ShieldCheck size={19} aria-hidden="true" />
           <h3>Вы отвечаете за сведения в карточке</h3>
         </div>
         <p>
-          Рейтинг отражает полноту описания. Он помогает командам оценить задачу
-          и не проверяет достоверность фактов.
+          Рейтинг помогает командам оценить объём и подготовить план. Факты и
+          реалистичность задачи подтверждает бизнес.
         </p>
         <label className="checkbox-label">
           <input

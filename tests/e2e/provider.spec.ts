@@ -2,10 +2,20 @@ import { expect, test, type Page } from "@playwright/test";
 import { emptyCard } from "../../src/domain/task";
 
 async function switchProfile(page: Page, actor: string) {
-  const selector = page.getByLabel("Демопрофиль");
-  if (!(await selector.isVisible()))
+  const menu = page.locator(".profile-menu");
+  if (
+    !(await menu
+      .getByRole("button", { name: "Бизнес", exact: true })
+      .isVisible())
+  )
     await page.getByLabel("Открыть профиль", { exact: true }).click();
-  await selector.selectOption(actor);
+  if (actor === "business") {
+    await menu.getByRole("button", { name: "Бизнес", exact: true }).click();
+  } else {
+    await menu.getByRole("button", { name: "Команда", exact: true }).click();
+    await page.getByLabel("Команда в профиле").selectOption(actor);
+  }
+  await page.getByLabel("Открыть профиль", { exact: true }).click();
 }
 
 test("failed initial load can be retried without a stale error", async ({
@@ -51,7 +61,12 @@ test("failed role switch never exposes the previous business snapshot", async ({
       json: { error: "Не удалось загрузить профиль команды" },
     }),
   );
-  await switchProfile(page, "team-2");
+  await page.getByLabel("Открыть профиль", { exact: true }).click();
+  await page
+    .locator(".profile-menu")
+    .getByRole("button", { name: "Команда", exact: true })
+    .click();
+  await page.getByLabel("Открыть профиль", { exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Не удалось загрузить данные" }),
   ).toBeVisible();
@@ -159,7 +174,7 @@ for (const delayedMethod of ["POST", "GET"] as const) {
       await page
         .locator(".team-card")
         .first()
-        .getByRole("button", { name: "Выбрать профиль" })
+        .getByRole("button", { name: "Выбрать команду" })
         .click();
       await expect(
         page.getByRole("heading", { name: "Мои отклики", exact: true }),
@@ -187,7 +202,7 @@ for (const delayedMethod of ["POST", "GET"] as const) {
       ).toHaveCount(0);
       await expect(page).toHaveURL(/\/team$/);
       // A navigation triggered by the late save response must not replace this screen.
-      await page.getByRole("button", { name: /Nomad Labs/ }).click();
+      await page.getByRole("button", { name: /Qyran Lab/ }).click();
       await expect(
         page.getByRole("heading", { name: "Мои отклики", exact: true }),
       ).toBeVisible();

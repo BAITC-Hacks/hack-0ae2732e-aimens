@@ -21,7 +21,11 @@ export function ProposalComparison({ proposals }: { proposals: Proposal[] }) {
   }[] = [
     {
       label: "Учебное заведение",
-      content: (_, team) => team?.university || "Не указано",
+      content: (_, team) => (
+        <span data-no-translate={!!team?.university || undefined}>
+          {team?.university || "Не указано"}
+        </span>
+      ),
     },
     {
       label: "Участники",
@@ -29,15 +33,32 @@ export function ProposalComparison({ proposals }: { proposals: Proposal[] }) {
     },
     {
       label: "Навыки",
-      content: (_, team) => team?.skills.join(" · ") || "Не указаны",
+      content: (_, team) => (
+        <span data-no-translate={!!team?.skills.length || undefined}>
+          {team?.skills.join(" · ") || "Не указаны"}
+        </span>
+      ),
     },
     {
       label: "Технологии",
-      content: (_, team) => team?.technologies?.join(" · ") || "Не указаны",
+      content: (_, team) => (
+        <span data-no-translate={!!team?.technologies?.length || undefined}>
+          {team?.technologies?.join(" · ") || "Не указаны"}
+        </span>
+      ),
     },
-    { label: "Идея решения", content: (proposal) => proposal.idea },
-    { label: "План работы", content: (proposal) => proposal.plan },
-    { label: "Срок", content: (proposal) => proposal.duration },
+    {
+      label: "Идея решения",
+      content: (proposal) => <span data-no-translate>{proposal.idea}</span>,
+    },
+    {
+      label: "План работы",
+      content: (proposal) => <span data-no-translate>{proposal.plan}</span>,
+    },
+    {
+      label: "Срок",
+      content: (proposal) => <span data-no-translate>{proposal.duration}</span>,
+    },
     {
       label: "Прототип",
       content: (proposal) => (
@@ -109,7 +130,9 @@ export function ProposalComparison({ proposals }: { proposals: Proposal[] }) {
                         <span className="team-avatar" aria-hidden="true">
                           {team?.initials}
                         </span>
-                        <strong>{team?.name || "Команда"}</strong>
+                        <strong data-no-translate={!!team?.name || undefined}>
+                          {team?.name || "Команда"}
+                        </strong>
                       </div>
                     </th>
                   ))}

@@ -14,8 +14,11 @@ import {
   Snapshot,
   Task,
   Team,
+  QualityAssessment,
+  qualityAssessmentSchema,
 } from "@/domain/task";
 import { draftExamples, seedTasks, seedTeams } from "@/domain/demo-data";
+import { consumeReviewTicket } from "@/server/review-tickets";
 
 export class DemoError extends Error {
   constructor(
@@ -44,6 +47,18 @@ function readCard(row: Row): Card {
   });
 }
 
+function readAssessment(row: Row): QualityAssessment | null {
+  if (!row.confirmed_at || !row.quality_review) return null;
+  try {
+    const result = qualityAssessmentSchema.safeParse(
+      JSON.parse(row.quality_review),
+    );
+    return result.success ? result.data : null;
+  } catch {
+    return null;
+  }
+}
+
 export class Store {
   private db: DatabaseSync;
   constructor(path: string) {
@@ -51,10 +66,15 @@ export class Store {
       mkdirSync(dirname(resolve(path)), { recursive: true });
     this.db = new DatabaseSync(path);
     this.db.exec(`PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL;
-      CREATE TABLE IF NOT EXISTS tasks (id TEXT PRIMARY KEY, card TEXT NOT NULL, raw_description TEXT NOT NULL, company TEXT NOT NULL, created_at TEXT NOT NULL, confirmed_at TEXT, published_at TEXT);
+      CREATE TABLE IF NOT EXISTS tasks (id TEXT PRIMARY KEY, card TEXT NOT NULL, raw_description TEXT NOT NULL, company TEXT NOT NULL, created_at TEXT NOT NULL, confirmed_at TEXT, published_at TEXT, quality_review TEXT);
       CREATE TABLE IF NOT EXISTS teams (id TEXT PRIMARY KEY, profile TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS proposals (id TEXT PRIMARY KEY, task_id TEXT NOT NULL REFERENCES tasks(id), team_id TEXT NOT NULL REFERENCES teams(id), idea TEXT NOT NULL, plan TEXT NOT NULL, duration TEXT NOT NULL, link TEXT NOT NULL, status TEXT NOT NULL CHECK(status IN ('pending','selected','rejected')), created_at TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS progress (id TEXT PRIMARY KEY, task_id TEXT NOT NULL REFERENCES tasks(id), team_id TEXT NOT NULL REFERENCES teams(id), description TEXT NOT NULL, link TEXT NOT NULL, submitted_at TEXT NOT NULL, confirmed_at TEXT, UNIQUE(task_id,team_id));`);
+    const taskColumns = this.db.prepare("PRAGMA table_info(tasks)").all() as {
+      name: string;
+    }[];
+    if (!taskColumns.some((column) => column.name === "quality_review"))
+      this.db.exec("ALTER TABLE tasks ADD COLUMN quality_review TEXT");
     this.seed();
   }
   close() {
@@ -64,7 +84,7 @@ export class Store {
     this.db.exec("BEGIN");
     try {
       const insertTask = this.db.prepare(
-        "INSERT OR IGNORE INTO tasks VALUES (?,?,?,?,?,?,?)",
+        "INSERT OR IGNORE INTO tasks (id,card,raw_description,company,created_at,confirmed_at,published_at) VALUES (?,?,?,?,?,?,?)",
       );
       draftExamples.forEach((draft) =>
         insertTask.run(
@@ -151,12 +171,14 @@ export class Store {
         id: row.id!,
         card: readCard(row),
         rawDescription: row.raw_description!,
-        company: row.company!,
+        company:
+          seedTasks.find((seed) => seed.id === row.id)?.company ?? row.company!,
         createdAt: row.created_at!,
         confirmedAt: row.confirmed_at,
         publishedAt: row.published_at,
+        qualityAssessment: readAssessment(row),
         readiness: computeReadiness(
-          row.confirmed_at ? (JSON.parse(row.card!) as Card) : emptyCard,
+          row.confirmed_at ? readCard(row) : emptyCard,
         ),
         proposalCount: Number(
           (
@@ -234,6 +256,30 @@ export class Store {
     this.checkActor(actor);
     const action = actionSchema.parse(input);
     const now = new Date().toISOString();
+    if (action.type === "create-team") {
+      const id = `team-${randomUUID()}`;
+      const profile: Team = {
+        id,
+        name: action.name,
+        initials: action.name
+          .trim()
+          .split(/\s+/u)
+          .slice(0, 2)
+          .map((part) => part[0]?.toLocaleUpperCase("ru") ?? "")
+          .join(""),
+        tagline: "Готовы решать реальные задачи бизнеса",
+        skills: [],
+        interests: action.interests,
+        points: 0,
+        iconKey: action.iconKey,
+        isCustom: true,
+        memberCount: 1,
+      };
+      this.db
+        .prepare("INSERT INTO teams VALUES (?,?)")
+        .run(id, JSON.stringify(profile));
+      return { teamId: id };
+    }
     if (action.type === "save-task") {
       this.requireBusiness(actor);
       const existing = action.id ? this.row("tasks", action.id) : null;
@@ -243,6 +289,14 @@ export class Store {
         );
       if (action.confirmed && (!action.card.title || !action.card.topic))
         throw new DemoError("Укажите название и тему задачи");
+      const assessment =
+        action.confirmed && action.reviewToken
+          ? consumeReviewTicket(
+              action.reviewToken,
+              action.rawDescription,
+              action.card,
+            )
+          : null;
       const id = action.id ?? randomUUID();
       const card = {
         ...action.card,
@@ -250,7 +304,7 @@ export class Store {
       };
       this.db
         .prepare(
-          `INSERT INTO tasks VALUES (?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET card=excluded.card, raw_description=excluded.raw_description, confirmed_at=excluded.confirmed_at, published_at=excluded.published_at`,
+          `INSERT INTO tasks (id,card,raw_description,company,created_at,confirmed_at,published_at,quality_review) VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET card=excluded.card, raw_description=excluded.raw_description, confirmed_at=excluded.confirmed_at, published_at=excluded.published_at, quality_review=excluded.quality_review`,
         )
         .run(
           id,
@@ -260,6 +314,7 @@ export class Store {
           existing?.created_at ?? now,
           action.confirmed ? now : null,
           existing?.published_at ?? (action.publish ? now : null),
+          assessment ? JSON.stringify(assessment) : null,
         );
       return { taskId: id };
     }

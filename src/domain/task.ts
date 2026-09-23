@@ -4,9 +4,36 @@ export const topics = [
   "Торговля",
   "Образование",
   "Логистика",
-  "Сервисы",
+  "Здоровье",
+  "Производство",
+  "Финансы",
+  "Туризм",
+  "Сельское хозяйство",
   "Маркетинг",
+  "IT и данные",
+  "Экология",
+  "Сервисы",
 ] as const;
+export type Topic = (typeof topics)[number];
+export const teamIconOptions = [
+  { key: "shanyrak", label: "Шанырак" },
+  { key: "yurt", label: "Юрта" },
+  { key: "horse", label: "Конь" },
+  { key: "tulpar", label: "Тулпар" },
+  { key: "ornament", label: "Орнамент" },
+  { key: "steppe", label: "Степь" },
+  { key: "tulip", label: "Тюльпан" },
+  { key: "sun", label: "Солнце" },
+  { key: "bow", label: "Садак" },
+  { key: "eagle", label: "Беркут" },
+] as const;
+export type TeamIconKey = (typeof teamIconOptions)[number]["key"];
+export type TopicSuggestion = {
+  topic: Topic;
+  confidence: number;
+  reason: string;
+  mode: "openai" | "local";
+};
 export const accessLabels = {
   unknown: "Не уточнено",
   public: "Публичный источник",
@@ -115,6 +142,19 @@ export const fields = [
   },
 ] as const;
 export type FieldKey = (typeof fields)[number]["key"];
+export type QualityDimension = {
+  field: FieldKey;
+  label: string;
+  max: number;
+  score: number;
+  reason: string;
+};
+export type QualityAssessment = {
+  score: number;
+  summary: string;
+  dimensions: QualityDimension[];
+  mode: "openai" | "local";
+};
 export const levels = [
   { key: "draft", label: "Черновик", min: 0 },
   { key: "working", label: "Рабочая", min: 40 },
@@ -138,25 +178,88 @@ function normalizeComparableText(value: string) {
 }
 
 const absentDataPhrases = new Set([
-  "нет", "нету", "нет данных", "нету данных", "данных нет",
-  "пока нет данных", "данных пока нет", "данные отсутствуют",
-  "данные пока отсутствуют", "пока данные отсутствуют",
-  "данные не предоставлены", "данные пока не предоставлены",
-  "данных не предоставлено", "данных пока не предоставлено",
-  "данные не указаны", "данные пока не указаны",
-  "данных не указано", "данных пока не указано",
-  "данные не уточнены", "данные пока не уточнены",
-  "данных не уточнено", "данных пока не уточнено",
-  "данных не имеется", "данных пока не имеется",
-  "информации нет", "информация отсутствует",
-  "материалов нет", "материалы отсутствуют",
-  "не уточнено", "не указано", "неизвестно", "не известно",
-  "пока неизвестно", "пока не известно", "отсутствует", "отсутствуют",
+  "нет",
+  "нету",
+  "нет данных",
+  "нету данных",
+  "данных нет",
+  "пока нет данных",
+  "данных пока нет",
+  "данные отсутствуют",
+  "данные пока отсутствуют",
+  "пока данные отсутствуют",
+  "данные не предоставлены",
+  "данные пока не предоставлены",
+  "данных не предоставлено",
+  "данных пока не предоставлено",
+  "данные не указаны",
+  "данные пока не указаны",
+  "данных не указано",
+  "данных пока не указано",
+  "данные не уточнены",
+  "данные пока не уточнены",
+  "данных не уточнено",
+  "данных пока не уточнено",
+  "данных не имеется",
+  "данных пока не имеется",
+  "информации нет",
+  "информация отсутствует",
+  "материалов нет",
+  "материалы отсутствуют",
+  "не уточнено",
+  "не указано",
+  "неизвестно",
+  "не известно",
+  "пока неизвестно",
+  "пока не известно",
+  "отсутствует",
+  "отсутствуют",
 ]);
 
 export function hasMeaningfulDataDescription(value: string) {
-  return !!normalizeMeaningfulText(value) &&
-    !absentDataPhrases.has(normalizeComparableText(value));
+  return (
+    !!normalizeMeaningfulText(value) &&
+    !absentDataPhrases.has(normalizeComparableText(value))
+  );
+}
+
+const junkAnswers = new Set([
+  "123",
+  "12345",
+  "test",
+  "тест",
+  "asdf",
+  "qwerty",
+  "хрень",
+  "заглушка",
+  "не знаю",
+  "потом",
+  "lorem ipsum",
+  "asdfasdf lorem ipsum",
+  "asdfasdf",
+  "qwertyuiop",
+  "bla bla",
+  "не знаю что написать",
+]);
+
+// Heuristic for optional advice only; readiness measures confirmed completeness.
+export function isUsefulAnswer(value: string, minWords = 2, minLength = 8) {
+  const normalized = normalizeMeaningfulText(value);
+  if (!normalized || normalized.length < minLength) return false;
+  const comparable = normalizeComparableText(normalized);
+  if (junkAnswers.has(comparable)) return false;
+  const words = comparable.split(" ").filter((word) => word.length > 1);
+  if (/(?:asdf|qwerty|lorem|ipsum|xxx|тесттест)/iu.test(comparable))
+    return false;
+  const uniqueWords = new Set(words);
+  if (words.length >= 2 && uniqueWords.size < Math.min(minWords, 2))
+    return false;
+  if (words.length >= 3 && uniqueWords.size / words.length < 0.5) return false;
+  // Reject keyboard mash while allowing short legitimate abbreviations (AI, KPI).
+  const letters = comparable.replace(/[^\p{L}]/gu, "");
+  const vowels = (letters.match(/[aeiouyаеёиоуыэюяәіңғүұқөһ]/giu) ?? []).length;
+  if (letters.length >= 8 && vowels / letters.length < 0.12) return false;
+  return words.length >= minWords;
 }
 
 export function computeReadiness(card: Card) {
@@ -226,6 +329,49 @@ export function computeReadiness(card: Card) {
   };
 }
 export type Readiness = ReturnType<typeof computeReadiness>;
+// Advisory scores have their own boundary and never replace computeReadiness.
+export const qualityAssessmentSchema = z
+  .object({
+    score: z.number().int().min(0).max(100),
+    summary: z.string().trim().min(3).max(500),
+    mode: z.enum(["openai", "local"]),
+    dimensions: z
+      .array(
+        z.object({
+          field: z.enum(
+            fields.map((field) => field.key) as [FieldKey, ...FieldKey[]],
+          ),
+          label: z.string().trim().min(1).max(100),
+          max: z.number().int().min(1).max(20),
+          score: z.number().int().min(0).max(20),
+          reason: z.string().trim().min(3).max(240),
+        }),
+      )
+      .length(9),
+  })
+  .superRefine((assessment, context) => {
+    const expected = computeReadiness(emptyCard).breakdown;
+    const validDimensions = expected.every((rule) => {
+      const matching = assessment.dimensions.filter(
+        (row) => row.field === rule.field,
+      );
+      return (
+        matching.length === 1 &&
+        matching[0].max === rule.max &&
+        matching[0].score <= rule.max
+      );
+    });
+    const total = assessment.dimensions.reduce(
+      (sum, row) => sum + row.score,
+      0,
+    );
+    if (!validDimensions || total !== assessment.score) {
+      context.addIssue({
+        code: "custom",
+        message: "Некорректная разбивка рекомендательной оценки",
+      });
+    }
+  });
 export type Task = {
   id: string;
   card: Card;
@@ -235,6 +381,7 @@ export type Task = {
   publishedAt: string | null;
   confirmedAt: string | null;
   readiness: Readiness;
+  qualityAssessment?: QualityAssessment | null;
   proposalCount: number;
 };
 export type Team = {
@@ -248,6 +395,8 @@ export type Team = {
   university?: string;
   memberCount?: number;
   technologies?: string[];
+  iconKey?: TeamIconKey;
+  isCustom?: boolean;
 };
 export type Proposal = {
   id: string;
@@ -297,6 +446,24 @@ export const actionSchema = z.discriminatedUnion("type", [
     rawDescription: text,
     confirmed: z.boolean(),
     publish: z.boolean(),
+    reviewToken: z.string().uuid().optional(),
+  }),
+  z.object({
+    type: z.literal("create-team"),
+    name: z.string().trim().min(2).max(60),
+    interests: z.array(z.enum(topics)).min(1).max(4),
+    iconKey: z.enum([
+      "shanyrak",
+      "yurt",
+      "horse",
+      "tulpar",
+      "ornament",
+      "steppe",
+      "tulip",
+      "sun",
+      "bow",
+      "eagle",
+    ]),
   }),
   z.object({
     type: z.literal("propose"),
@@ -324,6 +491,7 @@ export type ActionResult = {
   taskId?: string;
   proposalId?: string;
   progressId?: string;
+  teamId?: string;
 };
 export type Analysis = {
   mode: "openai" | "local";
@@ -332,4 +500,5 @@ export type Analysis = {
   sources: Partial<Record<FieldKey, string>>;
   missingFields: (keyof Card)[];
   questions: { field: FieldKey; question: string }[];
+  preliminaryReadiness?: Readiness;
 };

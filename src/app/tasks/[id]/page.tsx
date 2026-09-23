@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { accessLabels, emptyCard, workFormatLabels } from "@/domain/task";
 import { useDemo } from "@/components/demo-provider";
+import { useLocale } from "@/components/locale-provider";
 import { DataGate, Empty, Badge, ScorePanel } from "@/components/ui";
 import { ProposalCard, ProposalForm } from "@/components/proposals";
 import { ProposalComparison } from "@/components/proposal-comparison";
@@ -23,6 +24,7 @@ export default function TaskPage({
 }) {
   const { id } = use(params);
   const { data, actor, setActor, refreshFailed, reload } = useDemo();
+  const { locale } = useLocale();
   const task = data?.tasks.find((task) => task.id === id);
   const proposals =
     data?.proposals.filter((proposal) => proposal.taskId === id) ?? [];
@@ -63,7 +65,7 @@ export default function TaskPage({
               <div className={`company-mark topic-${task.card.topic}`}>
                 {task.company[0]}
               </div>
-              <strong>{task.company}</strong>
+              <strong data-no-translate>{task.company}</strong>
               <span>·</span>
               <span>{task.card.topic}</span>
               <Badge readiness={task.readiness} />
@@ -71,7 +73,7 @@ export default function TaskPage({
                 <span className="badge draft">Не опубликована</span>
               )}
             </div>
-            <h1>{task.card.title}</h1>
+            <h1 data-no-translate>{task.card.title}</h1>
             <div className="detail-meta">
               <span className="subtle">
                 <MapPin size={14} />
@@ -87,19 +89,24 @@ export default function TaskPage({
                 <time dateTime={task.publishedAt ?? task.createdAt}>
                   {new Date(
                     task.publishedAt ?? task.createdAt,
-                  ).toLocaleDateString("ru-RU", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                    timeZone: "UTC",
-                  })}
+                  ).toLocaleDateString(
+                    { ru: "ru-RU", kk: "kk-KZ", en: "en-US" }[locale],
+                    {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                      timeZone: "UTC",
+                    },
+                  )}
                 </time>
               </span>
             </div>
             {!!task.card.skills?.length && (
               <div className="tags task-skills" aria-label="Навыки для задачи">
                 {task.card.skills.map((skill) => (
-                  <span key={skill}>{skill}</span>
+                  <span key={skill} data-no-translate>
+                    {skill}
+                  </span>
                 ))}
               </div>
             )}
@@ -134,18 +141,24 @@ export default function TaskPage({
                 ].map(([title, text]) => (
                   <div className="detail-block" key={title}>
                     <h3>{title}</h3>
-                    <p className={!text ? "missing" : ""}>
+                    <p
+                      className={!text ? "missing" : ""}
+                      data-no-translate={!!text || undefined}
+                    >
                       {text || "Пока не уточнено — обсудите с бизнесом"}
                     </p>
                     {title === "Критерий успеха" && task.card.successTarget && (
-                      <p className="target">Цель: {task.card.successTarget}</p>
+                      <p className="target">
+                        Цель:{" "}
+                        <span data-no-translate>{task.card.successTarget}</span>
+                      </p>
                     )}
                   </div>
                 ))}
                 {task.rawDescription && (
                   <details className="task-source proposal-expand">
                     <summary>Исходное описание бизнеса</summary>
-                    <p>{task.rawDescription}</p>
+                    <p data-no-translate>{task.rawDescription}</p>
                   </details>
                 )}
               </section>
@@ -187,9 +200,12 @@ export default function TaskPage({
               )}
             </div>
             <aside className="sticky-aside stack">
-              <ScorePanel card={task.confirmedAt ? task.card : emptyCard} />
+              <ScorePanel
+                card={task.confirmedAt ? task.card : emptyCard}
+                assessment={task.qualityAssessment}
+              />
               <section className="panel">
-                <h2>{task.company}</h2>
+                <h2 data-no-translate>{task.company}</h2>
                 <p className="muted text-small">{task.card.topic}</p>
                 <div className="detail-block">
                   <h3>Формат работы</h3>
@@ -199,7 +215,7 @@ export default function TaskPage({
                 </div>
                 <div className="detail-block">
                   <h3>Связь с бизнесом</h3>
-                  <p>
+                  <p data-no-translate={!!task.card.interaction || undefined}>
                     {task.card.interaction ||
                       "Формат взаимодействия пока не уточнён"}
                   </p>
@@ -218,7 +234,7 @@ export default function TaskPage({
                     style={{ marginTop: 17, width: "100%" }}
                     onClick={() => setActor("team-1")}
                   >
-                    Стать Nomad Labs
+                    Стать Qyran Lab
                     <ArrowUpRight size={15} />
                   </button>
                 </div>

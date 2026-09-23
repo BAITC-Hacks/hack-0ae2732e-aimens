@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { z } from "zod";
 import {
   Analysis,
   Card,
@@ -7,6 +8,10 @@ import {
   FieldKey,
   fields,
   Task,
+  QualityAssessment,
+  qualityAssessmentSchema,
+  TopicSuggestion,
+  topics,
 } from "@/domain/task";
 import { parseBuilderAnalysis } from "@/domain/builder-analysis";
 import { useDemo } from "../demo-provider";
@@ -27,6 +32,13 @@ export function useTaskBuilder(task?: Task) {
   const [fillMessage, setFillMessage] = useState("");
   const [acknowledged, setAcknowledged] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [qualityAssessment, setQualityAssessment] =
+    useState<QualityAssessment | null>(task?.qualityAssessment ?? null);
+  const [reviewToken, setReviewToken] = useState<string>();
+  const [reviewing, setReviewing] = useState(false);
+  const [topicSuggestion, setTopicSuggestion] =
+    useState<TopicSuggestion | null>(null);
+  const [suggestingTopic, setSuggestingTopic] = useState(false);
   const request = useRef<AbortController | null>(null);
   const saving = useRef(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -51,6 +63,8 @@ export function useTaskBuilder(task?: Task) {
     setConfirmed(false);
     setAcknowledged(false);
     setError("");
+    setQualityAssessment(null);
+    setReviewToken(undefined);
   }
   const update: UpdateCard = (key, value) => {
     if (locked()) return;
@@ -62,6 +76,7 @@ export function useTaskBuilder(task?: Task) {
     if (locked()) return;
     setRawState(value);
     setAnalysis(null);
+    setTopicSuggestion(null);
     invalidateConfirmation();
   }
   function goToStep(next: BuilderStep) {
@@ -176,6 +191,80 @@ export function useTaskBuilder(task?: Task) {
       }
     }
   }
+  async function runAdvice(kind: "topic" | "review") {
+    if (locked()) return;
+    setError("");
+    if (kind === "topic" && raw.trim().length < 8) {
+      setError(
+        "Добавьте несколько слов о задаче, чтобы подобрать направление.",
+      );
+      return;
+    }
+    const controller = new AbortController();
+    request.current = controller;
+    const setPending = kind === "topic" ? setSuggestingTopic : setReviewing;
+    setPending(true);
+    const timeout = setTimeout(() => controller.abort(), 30_000);
+    try {
+      const response = await fetch(
+        kind === "topic" ? "/api/suggest-topic" : "/api/review-task",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            kind === "topic"
+              ? { description: raw }
+              : { rawDescription: raw, card },
+          ),
+          signal: controller.signal,
+        },
+      );
+      const result = await response.json();
+      if (!response.ok)
+        throw new Error(result.error || "Не удалось получить рекомендации.");
+      if (request.current !== controller) return;
+      if (kind === "topic") {
+        const suggestion = z
+          .object({
+            topic: z.enum(topics),
+            confidence: z.number().min(0).max(1),
+            reason: z.string().min(3).max(200),
+            mode: z.enum(["openai", "local"]),
+          })
+          .parse(result);
+        setTopicSuggestion(suggestion);
+        setCard((current) => ({ ...current, topic: suggestion.topic }));
+        setAnalysis(null);
+        invalidateConfirmation();
+      } else {
+        const review = z
+          .object({
+            assessment: qualityAssessmentSchema,
+            reviewToken: z.string().uuid(),
+          })
+          .parse(result);
+        setQualityAssessment(review.assessment);
+        setReviewToken(review.reviewToken);
+      }
+    } catch (err) {
+      if (request.current !== controller) return;
+      setError(
+        controller.signal.aborted
+          ? "Сервер не ответил вовремя. Ввод сохранён — можно продолжить вручную."
+          : err instanceof Error &&
+              err.name !== "ZodError" &&
+              !(err instanceof SyntaxError)
+            ? err.message
+            : "Получен некорректный ответ. Ввод сохранён — можно продолжить вручную.",
+      );
+    } finally {
+      clearTimeout(timeout);
+      if (request.current === controller) {
+        request.current = null;
+        setPending(false);
+      }
+    }
+  }
   function confirm() {
     if (locked()) return;
     if (!validateSkills()) return;
@@ -210,6 +299,7 @@ export function useTaskBuilder(task?: Task) {
           rawDescription: raw,
           confirmed: publish && confirmed,
           publish,
+          reviewToken: publish ? reviewToken : undefined,
         },
         publish
           ? task?.publishedAt
@@ -245,6 +335,12 @@ export function useTaskBuilder(task?: Task) {
     reachedStep,
     analysis,
     analyzing,
+    reviewing,
+    suggestingTopic,
+    qualityAssessment,
+    topicSuggestion,
+    reviewTask: () => runAdvice("review"),
+    suggestTopic: () => runAdvice("topic"),
     busy,
     error,
     confirmed,

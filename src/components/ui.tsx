@@ -1,14 +1,28 @@
 "use client";
+import { useLocale } from "./locale-provider";
 import Link from "next/link";
 import Image from "next/image";
 import {
   ArrowUpRight,
+  BookOpen,
+  Banknote,
+  BriefcaseBusiness,
   Check,
   Circle,
   Clock3,
+  Factory,
+  HeartPulse,
+  Leaf,
+  MapPinned,
+  Megaphone,
   MessageSquare,
   ArrowRight,
+  ShoppingBag,
+  Truck,
   Eye,
+  Wheat,
+  Database,
+  type LucideIcon,
 } from "lucide-react";
 import {
   Readiness,
@@ -16,6 +30,7 @@ import {
   Card,
   computeReadiness,
   levels,
+  QualityAssessment,
   workFormatLabels,
 } from "@/domain/task";
 import { useDemo } from "./demo-provider";
@@ -66,9 +81,11 @@ export function Badge({ readiness }: { readiness: Readiness }) {
 }
 export function ScorePanel({
   card,
+  assessment,
   preview = false,
 }: {
   card: Card;
+  assessment?: QualityAssessment | null;
   preview?: boolean;
 }) {
   const result = computeReadiness(card);
@@ -98,7 +115,11 @@ export function ScorePanel({
               <small>/{row.max}</small>
             </strong>
             <div className="score-row-track">
-              <i style={{ width: row.complete ? "100%" : "0%" }} />
+              <i
+                style={{
+                  width: `${Math.max(0, Math.min(100, (row.earned / row.max) * 100))}%`,
+                }}
+              />
             </div>
           </div>
         ))}
@@ -114,7 +135,8 @@ export function ScorePanel({
           ))}
           {nextLevel && (
             <p className="next-level">
-              До уровня «{nextLevel.label}» — {nextLevel.min - result.score} баллов
+              До уровня «{nextLevel.label}» — {nextLevel.min - result.score}{" "}
+              баллов
             </p>
           )}
         </div>
@@ -125,6 +147,15 @@ export function ScorePanel({
             <h3>Все детали на месте</h3>
             <p>Команда может оценить объём работы.</p>
           </div>
+        </div>
+      )}
+      {assessment && (
+        <div className="improve">
+          <h3>Рекомендации по содержанию</h3>
+          <p data-no-translate>{assessment.summary}</p>
+          <p className="muted text-small">
+            Дополнительный анализ не меняет рейтинг готовности.
+          </p>
         </div>
       )}
     </section>
@@ -143,6 +174,25 @@ export function categoryAsset(topic: string) {
     )[topic] ?? "briefcase"
   );
 }
+const taskVisualIcon: Record<string, LucideIcon> = {
+  Торговля: ShoppingBag,
+  Образование: BookOpen,
+  Логистика: Truck,
+  Сервисы: BriefcaseBusiness,
+  Маркетинг: Megaphone,
+  "Сельское хозяйство": Wheat,
+  Туризм: MapPinned,
+  "IT и данные": Database,
+  Производство: Factory,
+  Здоровье: HeartPulse,
+  Финансы: Banknote,
+  Экология: Leaf,
+};
+const demoBrandSubtitle: Record<string, string> = {
+  "task-coffee": "Zhibek Zholy",
+  "task-education": "Bilim School",
+  "task-delivery": "Тұлпар жеткізу",
+};
 export function TaskCard({
   task,
   visual = false,
@@ -154,6 +204,9 @@ export function TaskCard({
   onPreview?: () => void;
   selected?: boolean;
 }) {
+  const { locale, t } = useLocale();
+  const readiness = task.readiness;
+  const VisualIcon = taskVisualIcon[task.card.topic] ?? BriefcaseBusiness;
   return (
     <article
       className={`task-card ${visual ? "visual-card" : ""} ${selected ? "is-selected" : ""}`}
@@ -161,14 +214,18 @@ export function TaskCard({
     >
       {visual && (
         <div className={`task-visual topic-${task.card.topic}`}>
-          <Image
-            src={`/assets/svg/${categoryAsset(task.card.topic)}.svg`}
-            alt=""
-            width={68}
-            height={68}
-          />
+          <VisualIcon size={58} strokeWidth={1.8} aria-hidden="true" />
           <span>{task.card.topic}</span>
-          <span className="visual-word">{task.company}</span>
+          <span className="visual-brand">
+            <span className="visual-word" data-no-translate>
+              {task.company}
+            </span>
+            {demoBrandSubtitle[task.id] && (
+              <small className="visual-transliteration">
+                {demoBrandSubtitle[task.id]}
+              </small>
+            )}
+          </span>
         </div>
       )}
       <div className="task-card-content">
@@ -180,52 +237,71 @@ export function TaskCard({
             {task.company.slice(0, 1)}
           </div>
           <div className="company-info">
-            <strong>{task.company}</strong>
+            <strong data-no-translate>{task.company}</strong>
             <span>
               {task.card.topic} ·{" "}
               {task.publishedAt
-                ? new Date(task.publishedAt).toLocaleDateString("ru-RU", {
-                    day: "numeric",
-                    month: "short",
-                  })
+                ? new Date(task.publishedAt).toLocaleDateString(
+                    { ru: "ru-RU", kk: "kk-KZ", en: "en-US" }[locale],
+                    {
+                      day: "numeric",
+                      month: "short",
+                    },
+                  )
                 : "Черновик"}
             </span>
           </div>
           <FavoriteButton id={task.id} title={task.card.title} />
         </div>
         <h2>
-          <Link href={`/tasks/${task.id}`}>{task.card.title}</Link>
+          <Link href={`/tasks/${task.id}`} data-no-translate>
+            {task.card.title}
+          </Link>
         </h2>
-        <p className="task-summary">
+        <p
+          className="task-summary"
+          data-no-translate={
+            !!(task.card.need || task.card.context) || undefined
+          }
+        >
           {task.card.need ||
             task.card.context ||
             "Бизнес уточняет детали этой задачи."}
         </p>
         <div className="tags">
           {(task.card.skills ?? []).slice(0, 3).map((skill) => (
-            <span key={skill}>{skill}</span>
+            <span key={skill} data-no-translate>
+              {skill}
+            </span>
           ))}
         </div>
         <div className="task-card-footer">
           <span>{workFormatLabels[task.card.workFormat ?? "unspecified"]}</span>
           <span className="subtle">
             <MessageSquare size={14} />
-            {task.proposalCount} откликов
+            {task.proposalCount}{" "}
+            {locale === "en"
+              ? task.proposalCount === 1
+                ? "response"
+                : "responses"
+              : locale === "kk"
+                ? "жауап"
+                : "откликов"}
           </span>
         </div>
         <div className="task-card-bottom">
           <div className="mini-score">
             <strong>
-              {task.readiness.score}
+              {readiness.score}
               <small>/100</small>
             </strong>
-            <Badge readiness={task.readiness} />
+            <Badge readiness={readiness} />
           </div>
           {onPreview ? (
             <button
               className="text-link preview-button"
               onClick={onPreview}
-              aria-label={`Предпросмотр: ${task.card.title}`}
+              aria-label={`${t("Предпросмотр")}: ${task.card.title}`}
               aria-pressed={selected}
               aria-controls="catalog-preview"
             >
@@ -236,7 +312,7 @@ export function TaskCard({
             <Link
               href={`/tasks/${task.id}`}
               className="icon-button"
-              aria-label={`Открыть задачу: ${task.card.title}`}
+              aria-label={`${t("Открыть задачу")}: ${task.card.title}`}
             >
               <ArrowUpRight size={19} />
             </Link>

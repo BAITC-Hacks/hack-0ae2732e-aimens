@@ -164,7 +164,10 @@ function CatalogContent() {
           <div className="recommendation-heading">
             <Sparkles size={18} />
             <h2>Рекомендовано вашей команде</h2>
-            <span>{team.name} · по интересам и навыкам</span>
+            <span>
+              <span data-no-translate>{team.name}</span> · по интересам и
+              навыкам
+            </span>
           </div>
           <div className="recommendation-grid">
             {recommendations.map(({ task, reasons }) => (
@@ -174,7 +177,7 @@ function CatalogContent() {
                 className="recommendation-card"
               >
                 <div>
-                  <strong>{task.card.title}</strong>
+                  <strong data-no-translate>{task.card.title}</strong>
                   <span>{reasons.join(" · ")}</span>
                 </div>
                 <ArrowUpRight size={18} />
@@ -359,8 +362,10 @@ function CatalogContent() {
               >
                 {selected.company[0]}
               </div>
-              <p className="text-small muted">{selected.company}</p>
-              <h2>{selected.card.title}</h2>
+              <p className="text-small muted" data-no-translate>
+                {selected.company}
+              </p>
+              <h2 data-no-translate>{selected.card.title}</h2>
               <Badge readiness={selected.readiness} />
               <div className="preview-score">
                 <strong>
@@ -377,14 +382,21 @@ function CatalogContent() {
                 <div style={{ width: `${selected.readiness.score}%` }} />
               </div>
               <h3>Что предстоит сделать</h3>
-              <p>
+              <p
+                data-no-translate={
+                  !!(selected.card.expectedResult || selected.card.need) ||
+                  undefined
+                }
+              >
                 {selected.card.expectedResult ||
                   selected.card.need ||
                   "Результат ещё предстоит уточнить с бизнесом."}
               </p>
               <div className="tags">
                 {(selected.card.skills ?? []).map((skill) => (
-                  <span key={skill}>{skill}</span>
+                  <span key={skill} data-no-translate>
+                    {skill}
+                  </span>
                 ))}
               </div>
               <dl>

@@ -110,7 +110,10 @@ export default function BusinessPage() {
                   <div className="company-mark">{task.company.slice(0, 1)}</div>
                   <div className="row-main">
                     <h2>
-                      <Link href={`/tasks/${task.id}`}>
+                      <Link
+                        href={`/tasks/${task.id}`}
+                        data-no-translate={!!task.card.title || undefined}
+                      >
                         {task.card.title || "Без названия"}
                       </Link>
                     </h2>
@@ -162,7 +165,11 @@ export default function BusinessPage() {
                   >
                     <option value="">Все задачи</option>
                     {data?.tasks.map((task) => (
-                      <option key={task.id} value={task.id}>
+                      <option
+                        key={task.id}
+                        value={task.id}
+                        data-no-translate={!!task.card.title || undefined}
+                      >
                         {task.card.title || "Без названия"}
                       </option>
                     ))}

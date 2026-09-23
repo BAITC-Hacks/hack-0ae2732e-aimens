@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { Store } from "@/server/store";
-import { emptyCard } from "@/domain/task";
+import { computeReadiness, emptyCard, QualityAssessment } from "@/domain/task";
+import { issueReviewTicket } from "@/server/review-tickets";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -15,6 +16,140 @@ function fresh() {
 afterEach(() => stores.splice(0).forEach((store) => store.close()));
 
 describe("demo workflow", () => {
+  it("migrates existing databases without losing tasks or requiring assessment", () => {
+    const path = join(
+      mkdtempSync(join(tmpdir(), "sanalink-migration-")),
+      "demo.sqlite",
+    );
+    const oldDb = new DatabaseSync(path);
+    const card = {
+      ...emptyCard,
+      title: "Существующая задача",
+      context: "Контекст",
+    };
+    try {
+      oldDb.exec(
+        "CREATE TABLE tasks (id TEXT PRIMARY KEY, card TEXT NOT NULL, raw_description TEXT NOT NULL, company TEXT NOT NULL, created_at TEXT NOT NULL, confirmed_at TEXT, published_at TEXT)",
+      );
+      oldDb
+        .prepare("INSERT INTO tasks VALUES (?,?,?,?,?,?,?)")
+        .run(
+          "existing-task",
+          JSON.stringify(card),
+          "Исходный ввод",
+          "Бизнес",
+          "2026-09-01T08:00:00.000Z",
+          "2026-09-01T08:00:00.000Z",
+          "2026-09-01T08:00:00.000Z",
+        );
+    } finally {
+      oldDb.close();
+    }
+    const store = new Store(path);
+    stores.push(store);
+    const task = store
+      .snapshot("team-1")
+      .tasks.find((item) => item.id === "existing-task")!;
+    expect(task.card).toEqual(card);
+    expect(task.rawDescription).toBe("Исходный ввод");
+    expect(task.qualityAssessment).toBeNull();
+    expect(task.readiness).toEqual(computeReadiness(card));
+    store.seed();
+    expect(store.snapshot("business").tasks).toHaveLength(11);
+  });
+
+  it("stores advisory assessment without replacing official readiness or sort order", () => {
+    const store = fresh();
+    const original = store
+      .snapshot("business")
+      .tasks.find((task) => task.id === "task-coffee")!;
+    const assessment: QualityAssessment = {
+      score: 0,
+      summary: "Рекомендация уточнить формулировки",
+      mode: "local",
+      dimensions: computeReadiness(original.card).breakdown.map((row) => ({
+        field: row.field,
+        label: row.label,
+        max: row.max,
+        score: 0,
+        reason: "Уточните содержание поля",
+      })),
+    };
+    const result = store.act("business", {
+      type: "save-task",
+      id: original.id,
+      card: original.card,
+      rawDescription: original.rawDescription,
+      confirmed: true,
+      publish: true,
+      reviewToken: issueReviewTicket(
+        original.rawDescription,
+        original.card,
+        assessment,
+      ),
+    });
+    const published = store
+      .snapshot("team-1")
+      .tasks.find((task) => task.id === result.taskId)!;
+    expect(published.qualityAssessment).toEqual(assessment);
+    expect(published.readiness).toEqual(computeReadiness(original.card));
+    expect(published.readiness.score).toBe(100);
+    expect(store.snapshot("team-1").tasks[0].id).toBe(original.id);
+
+    // A used ticket is optional, and client-supplied ratings are never trusted.
+    store.act("business", {
+      type: "save-task",
+      id: original.id,
+      card: { ...original.card, context: "" },
+      rawDescription: original.rawDescription,
+      confirmed: true,
+      publish: false,
+      reviewToken: "00000000-0000-4000-8000-000000000000",
+      qualityAssessment: assessment,
+      readiness: { score: 100 },
+    });
+    const edited = store
+      .snapshot("team-1")
+      .tasks.find((task) => task.id === original.id)!;
+    expect(edited.qualityAssessment).toBeNull();
+    expect(edited.readiness.score).toBe(90);
+  });
+
+  it("creates a usable custom team without affecting existing teams", () => {
+    const store = fresh();
+    const before = store.snapshot("business").teams;
+    const { teamId } = store.act("business", {
+      type: "create-team",
+      name: "Qyran Lab",
+      interests: ["IT и данные", "Торговля"],
+      iconKey: "eagle",
+    });
+    expect(
+      store.snapshot(teamId!).teams.find((team) => team.id === teamId),
+    ).toMatchObject({
+      name: "Qyran Lab",
+      interests: ["IT и данные", "Торговля"],
+      iconKey: "eagle",
+      isCustom: true,
+      points: 0,
+    });
+    expect(
+      store.snapshot("business").teams.filter((team) => team.id !== teamId),
+    ).toEqual(before);
+    const { proposalId } = store.act(teamId!, {
+      type: "propose",
+      taskId: "task-marketing",
+      idea: "Проверим гипотезу",
+      plan: "Соберём прототип",
+      duration: "2 недели",
+      link: "https://example.com/prototype",
+    });
+    expect(
+      store
+        .snapshot(teamId!)
+        .proposals.find((proposal) => proposal.id === proposalId)?.teamId,
+    ).toBe(teamId);
+  });
   it("restores legacy metadata only for unchanged seed cards", () => {
     const path = join(
       mkdtempSync(join(tmpdir(), "sanalink-legacy-")),
