@@ -9,6 +9,20 @@ import {
 } from "react";
 import { Action, ActionResult, Snapshot } from "@/domain/task";
 
+const ACTOR_STORAGE_KEY = "praktika-demo-actor";
+const demoActors = new Set([
+  "business",
+  "team-1",
+  "team-2",
+  "team-3",
+  "team-4",
+  "team-5",
+]);
+
+function isDemoActor(value: string | null): value is string {
+  return value !== null && demoActors.has(value);
+}
+
 type DemoContextValue = {
   actor: string;
   setActor: (actor: string) => void;
@@ -24,11 +38,27 @@ type DemoContextValue = {
 const DemoContext = createContext<DemoContextValue | null>(null);
 export function DemoProvider({ children }: { children: ReactNode }) {
   const [actor, setActorState] = useState("business");
+  const [actorReady, setActorReady] = useState(false);
   const [data, setData] = useState<Snapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  useEffect(() => {
+    const restoreActor = window.setTimeout(() => {
+      try {
+        const storedActor = window.sessionStorage.getItem(ACTOR_STORAGE_KEY);
+        if (isDemoActor(storedActor)) setActorState(storedActor);
+        else if (storedActor !== null)
+          window.sessionStorage.removeItem(ACTOR_STORAGE_KEY);
+      } catch {
+        /* The demo still works when browser storage is unavailable. */
+      } finally {
+        setActorReady(true);
+      }
+    }, 0);
+    return () => window.clearTimeout(restoreActor);
+  }, []);
   const reload = useCallback(async () => {
     const response = await fetch("/api/demo", {
       headers: { "x-demo-actor": actor },
@@ -39,6 +69,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     setData(result);
   }, [actor]);
   useEffect(() => {
+    if (!actorReady) return;
     let active = true;
     fetch("/api/demo", {
       headers: { "x-demo-actor": actor },
@@ -62,8 +93,14 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [actor]);
+  }, [actor, actorReady]);
   function setActor(next: string) {
+    if (!isDemoActor(next)) return;
+    try {
+      window.sessionStorage.setItem(ACTOR_STORAGE_KEY, next);
+    } catch {
+      /* Persisting the selector is optional for restricted browsers. */
+    }
     if (next === actor) return;
     setActorState(next);
     setLoading(true);

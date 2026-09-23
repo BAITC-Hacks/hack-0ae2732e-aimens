@@ -7,22 +7,26 @@ import { DataGate } from "@/components/ui";
 export default function TeamsPage() {
   const { data, actor, setActor } = useDemo();
   const router = useRouter();
+  const rankedTeams = [...(data?.teams ?? [])].sort(
+    (left, right) => right.points - left.points || left.name.localeCompare(right.name, "ru"),
+  );
   return (
     <DataGate>
       <div className="page-heading">
         <div>
           <div className="eyebrow">КОМАНДЫ SANALINK</div>
           <h1>Команды, готовые пробовать</h1>
-          <p>
-            Пять демокоманд с разными навыками. Общий каталог открыт каждой.
-          </p>
+          <p>Баллы показывают подтверждённые бизнесом первые результаты. При равенстве команды делят место.</p>
         </div>
       </div>
       <div className="team-grid">
-        {data?.teams.map((team) => (
+        {rankedTeams.map((team) => (
           <article className="team-card" key={team.id}>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <div className="team-avatar">{team.initials}</div>
+              <span className="team-rank" aria-label={`${rankedTeams.findIndex((candidate) => candidate.points === team.points) + 1} место`}>
+                #{rankedTeams.findIndex((candidate) => candidate.points === team.points) + 1}
+              </span>
               {actor === team.id && (
                 <span className="text-green text-small">Ваш профиль</span>
               )}

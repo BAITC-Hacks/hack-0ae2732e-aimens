@@ -193,6 +193,9 @@ test("business and a team complete the whole workflow", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Первый результат подтверждён" }),
   ).toBeVisible();
+  await page.goto("/teams");
+  await expect(page.locator(".team-card").first()).toContainText("Nomad Labs");
+  await expect(page.locator(".team-card").first().getByLabel("1 место")).toBeVisible();
   expect(errors).toEqual([]);
 });
 
@@ -221,6 +224,13 @@ test("all pages work and catalog filters do not restrict team access", async ({
       exact: true,
     })
     .click();
+  await expect(
+    page.getByRole("heading", { name: "Предложите своё решение" }),
+  ).toBeVisible();
+  await page.reload();
+  await page.getByLabel("Открыть профиль").click();
+  await expect(page.getByLabel("Демопрофиль")).toHaveValue("team-5");
+  await page.getByLabel("Открыть профиль").click();
   await expect(
     page.getByRole("heading", { name: "Предложите своё решение" }),
   ).toBeVisible();

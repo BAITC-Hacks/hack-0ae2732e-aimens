@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   Card,
+  Analysis,
   fields,
   accessLabels,
   topics,
@@ -14,11 +15,13 @@ export function CardFields({
   raw,
   setRaw,
   update,
+  analysis,
 }: {
   card: Card;
   raw: string;
   setRaw: (value: string) => void;
   update: UpdateCard;
+  analysis: Analysis | null;
 }) {
   const [skillText, setSkillText] = useState(card.skills.join(", "));
   return (
@@ -147,6 +150,12 @@ export function CardFields({
                     />
                   )}
                 </label>
+                {analysis?.sources[field.key] &&
+                  card[field.key] === analysis.suggestions[field.key] && (
+                    <p className={styles.source}>
+                      Из вашего описания: «{analysis.sources[field.key]}»
+                    </p>
+                  )}
                 {field.key === "dataDescription" && (
                   <label className="field">
                     <span>Доступ к данным</span>

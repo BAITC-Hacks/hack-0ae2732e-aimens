@@ -15,6 +15,7 @@ import {
   Task,
   Card,
   computeReadiness,
+  levels,
   workFormatLabels,
 } from "@/domain/task";
 import { useDemo } from "./demo-provider";
@@ -71,6 +72,10 @@ export function ScorePanel({
   preview?: boolean;
 }) {
   const result = computeReadiness(card);
+  const nextLevel = levels.find((level) => level.min > result.score);
+  const nextActions = [...result.missing]
+    .sort((left, right) => right.max - left.max)
+    .slice(0, 3);
   return (
     <section className="panel score-panel">
       <div className="eyebrow">
@@ -101,12 +106,17 @@ export function ScorePanel({
       {result.missing.length > 0 ? (
         <div className="improve">
           <h3>Что повысит рейтинг</h3>
-          {result.missing.slice(0, 3).map((row) => (
+          {nextActions.map((row) => (
             <div className="improvement-row" key={row.field}>
               <strong>+{row.max}</strong>
               <p>{row.tip}</p>
             </div>
           ))}
+          {nextLevel && (
+            <p className="next-level">
+              До уровня «{nextLevel.label}» — {nextLevel.min - result.score} баллов
+            </p>
+          )}
         </div>
       ) : (
         <div className="improve complete-note">

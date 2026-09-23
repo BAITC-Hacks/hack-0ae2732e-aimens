@@ -8,6 +8,7 @@ import {
   ArrowUpRight,
   Send,
   Award,
+  Info,
 } from "lucide-react";
 import { Proposal, Task } from "@/domain/task";
 import { useDemo } from "./demo-provider";
@@ -21,6 +22,10 @@ export function ProposalForm({ task }: { task: Task }) {
   const [link, setLink] = useState("");
   const [sent, setSent] = useState(false);
   const team = data?.teams.find((team) => team.id === actor);
+  const existingCount =
+    data?.proposals.filter(
+      (proposal) => proposal.taskId === task.id && proposal.teamId === actor,
+    ).length ?? 0;
   if (sent)
     return (
       <div className="panel" id="proposal">
@@ -52,6 +57,15 @@ export function ProposalForm({ task }: { task: Task }) {
         Расскажите, как ваша команда подойдёт к задаче. Окончательное решение
         принимает бизнес.
       </p>
+      {existingCount > 0 && (
+        <div className="info-note">
+          <Info size={16} aria-hidden="true" />
+          <span>
+            У команды уже есть предложение по этой задаче. Можно отправить ещё
+            один самостоятельный вариант — бизнес рассмотрит варианты отдельно.
+          </span>
+        </div>
+      )}
       <form
         onSubmit={async (event) => {
           event.preventDefault();

@@ -144,7 +144,23 @@ export function TaskEditor({ task }: { task?: Task }) {
             />
           )}
           {step === 2 && (
-            <CardFields card={card} raw={raw} setRaw={setRaw} update={update} />
+            <>
+              <CardFields
+                card={card}
+                raw={raw}
+                setRaw={setRaw}
+                update={update}
+                analysis={analysis}
+              />
+              <button
+                type="button"
+                className="button secondary"
+                disabled={busy || analyzing}
+                onClick={analyze}
+              >
+                {analyzing ? "Анализируем карточку…" : "Повторно уточнить с AI"}
+              </button>
+            </>
           )}
           {step === 3 && (
             <PublishStep

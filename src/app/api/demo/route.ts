@@ -1,5 +1,6 @@
 import { ZodError } from "zod";
 import { DemoError, getStore } from "@/server/store";
+import { readLimitedBody } from "@/server/http";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 function errorResponse(error: unknown) {
@@ -32,8 +33,8 @@ export async function GET(request: Request) {
 }
 export async function POST(request: Request) {
   try {
-    const body = await request.text();
-    if (body.length > 65000)
+    const body = await readLimitedBody(request);
+    if (body === null)
       return Response.json(
         { error: "Слишком большой запрос" },
         { status: 413 },
